@@ -4,8 +4,9 @@ from sqlalchemy.orm import Session
 
 from app.db.models import User, College
 from app.core.security import create_access_token
+import os
 
-GOOGLE_CLIENT_ID = "YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com"
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 
 
 def google_login(db: Session, id_token_str: str, college_id: int):
