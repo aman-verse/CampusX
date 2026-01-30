@@ -23,7 +23,8 @@ class Canteen(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
-
+    college_id = Column(Integer, ForeignKey("colleges.id"))
+    vendor_phone = Column(String, nullable=False)
     menu_items = relationship("MenuItem", back_populates="canteen")
 
 
@@ -51,6 +52,7 @@ class Order(Base):
     user = relationship("User", back_populates="orders")
 
     items = relationship("OrderItem", back_populates="order")
+    canteen_id = Column(Integer, ForeignKey("canteens.id"))
 
 
 # ---------- ORDER ITEMS ----------
@@ -74,3 +76,12 @@ class College(Base):
     name = Column(String, nullable=False, unique=True)
     allowed_domains = Column(String, nullable=False)
     allow_external_emails = Column(Boolean, default=False)
+
+#----------CREATE TABLE vendor_canteen (
+ 
+class vendor_canteen(Base):
+    __tablename__ = "vendor_canteen"
+
+    user_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
+    canteen_id = Column(Integer, ForeignKey("canteens.id"), primary_key=True)
+
