@@ -11,11 +11,22 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
     email = Column(String, unique=True, index=True, nullable=False)
-    password = Column(String, nullable=False)   # 👈 ADD THIS
+
+    # Nullable because of Google login
+    password = Column(String, nullable=True)
+
     role = Column(String, nullable=False)
 
     orders = relationship("Order", back_populates="user")
 
+# ---------- COLLEGES ----------
+class College(Base):
+    __tablename__ = "colleges"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False, unique=True)
+    allowed_domains = Column(String, nullable=False)
+    allow_external_emails = Column(Boolean, default=False)
 
 # ---------- CANTEENS ----------
 class Canteen(Base):
@@ -23,8 +34,13 @@ class Canteen(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
-    college_id = Column(Integer, ForeignKey("colleges.id"))
+
+    college_id = Column(Integer, ForeignKey("colleges.id"), nullable=False)
+
+    # WhatsApp number lives HERE
     vendor_phone = Column(String, nullable=False)
+
+    orders = relationship("Order", back_populates="canteen")
     menu_items = relationship("MenuItem", back_populates="canteen")
 
 
@@ -36,7 +52,7 @@ class MenuItem(Base):
     name = Column(String, nullable=False)
     price = Column(Integer, nullable=False)
 
-    canteen_id = Column(Integer, ForeignKey("canteens.id"))
+    canteen_id = Column(Integer, ForeignKey("canteens.id"), nullable=False)
     canteen = relationship("Canteen", back_populates="menu_items")
 
 
@@ -48,11 +64,13 @@ class Order(Base):
     status = Column(String, default="placed")
     created_at = Column(DateTime, default=datetime.utcnow)
 
-    user_id = Column(Integer, ForeignKey("users.id"))
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    canteen_id = Column(Integer, ForeignKey("canteens.id"), nullable=False)
+
     user = relationship("User", back_populates="orders")
+    canteen = relationship("Canteen", back_populates="orders")
 
     items = relationship("OrderItem", back_populates="order")
-    canteen_id = Column(Integer, ForeignKey("canteens.id"))
 
 
 # ---------- ORDER ITEMS ----------
@@ -62,26 +80,15 @@ class OrderItem(Base):
     id = Column(Integer, primary_key=True, index=True)
     quantity = Column(Integer, nullable=False)
 
-    order_id = Column(Integer, ForeignKey("orders.id"))
-    menu_item_id = Column(Integer, ForeignKey("menu_items.id"))
+    order_id = Column(Integer, ForeignKey("orders.id"), nullable=False)
+    menu_item_id = Column(Integer, ForeignKey("menu_items.id"), nullable=False)
 
     order = relationship("Order", back_populates="items")
 
-password = Column(String, nullable=False)
 
-class College(Base):
-    __tablename__ = "colleges"
-
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, nullable=False, unique=True)
-    allowed_domains = Column(String, nullable=False)
-    allow_external_emails = Column(Boolean, default=False)
-
-#----------CREATE TABLE vendor_canteen (
- 
-class vendor_canteen(Base):
+# ---------- VENDOR ↔ CANTEEN MAP ----------
+class VendorCanteen(Base):
     __tablename__ = "vendor_canteen"
 
     user_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
     canteen_id = Column(Integer, ForeignKey("canteens.id"), primary_key=True)
-
