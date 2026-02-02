@@ -1,42 +1,62 @@
+from http.client import HTTPException
 from sqlalchemy.orm import Session
 from app.db.models import Order, OrderItem, User
 from app.db import models
+from datetime import datetime
+from app.db import models
+from app.services.whatsapp import build_whatsapp_url
 
-def create_order(db: Session, user_id: int, canteen_id: int, items: list):
-    # 1. Validate canteen
+from fastapi import HTTPException
+from app.db import models
+from app.services.whatsapp import build_whatsapp_url
+
+def create_order(db, user_id: int, canteen_id: int, items: list):
+    print("DEBUG: user_id =", user_id)
+    print("DEBUG: canteen_id =", canteen_id)
+    print("DEBUG: items =", items)
+
     canteen = db.query(models.Canteen).filter(
         models.Canteen.id == canteen_id
     ).first()
 
-    if not canteen:
-        raise ValueError("Invalid canteen")
+    print("DEBUG: canteen =", canteen)
 
-    # 2. Create order
+    if not canteen:
+        raise HTTPException(status_code=404, detail="Canteen not found")
+
     order = models.Order(
         user_id=user_id,
-        canteen_id=canteen_id,
-        status="placed"
+        canteen_id=canteen_id
     )
-
     db.add(order)
     db.commit()
     db.refresh(order)
 
-    # 3. Add order items
+    print("DEBUG: order created, id =", order.id)
+
     for item in items:
-        order_item = models.OrderItem(
+        print("DEBUG: adding item", item.menu_item_id, item.quantity)
+
+        db.add(models.OrderItem(
             order_id=order.id,
-            menu_item_id=item["menu_item_id"],
-            quantity=item["quantity"]
-        )
-        db.add(order_item)
+            menu_item_id=item.menu_item_id,
+            quantity=item.quantity
+        ))
 
     db.commit()
 
-    # 4. RETURN canteen phone (SOURCE OF TRUTH)
+    whatsapp_url = build_whatsapp_url(
+        phone=canteen.vendor_phone,
+        order_id=order.id,
+        items=items
+    )
+
+    print("DEBUG: whatsapp_url =", whatsapp_url)
+
     return {
         "order_id": order.id,
-        "canteen_phone": canteen.vendor_phone
+        "status": order.status,
+        "whatsapp_url": whatsapp_url
     }
 
 
@@ -78,4 +98,3 @@ def deliver_order(db: Session, order_id: int):
     db.commit()
     db.refresh(order)
     return order
-

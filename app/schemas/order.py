@@ -8,8 +8,8 @@ class OrderItemCreate(BaseModel):
 
 
 class OrderCreate(BaseModel):
-    items: List[OrderItemCreate]
-
+    canteen_id: int          # ✅ ADD THIS
+    items: list[OrderItemCreate]
 
 class OrderResponse(BaseModel):
     order_id: int

@@ -30,19 +30,21 @@ def place_order(
     db: Session = Depends(get_db),
     user=Depends(require_roles(["student"]))
 ):
-    """
-    data must contain:
-    - canteen_id
-    - items[]
-    """
+
+    db_user = db.query(models.User).filter(
+        models.User.email == user["sub"]
+    ).first()
+
+    if not db_user:
+        return {"error": "User not found"}
+
     return create_order(
         db=db,
-        user_id=user["id"],
+        user_id=db_user.id,
         canteen_id=data.canteen_id,
         items=data.items
     )
-
-
+    
 @router.get("/my", response_model=list[OrderOut])
 def my_orders(
     db: Session = Depends(get_db),
@@ -56,7 +58,6 @@ def my_orders(
 
     return orders
 
-
 # ================= VENDOR =================
 
 @router.get("/vendor", response_model=list[OrderOut])
@@ -64,20 +65,23 @@ def vendor_orders(
     db: Session = Depends(get_db),
     user=Depends(require_roles(["vendor"]))
 ):
-    """
-    Vendor sees ONLY orders of canteens he manages
-    """
+    from app.db import models
 
-    orders = (
-        db.query(models.Order)
-        .join(
-            models.VendorCanteen,
-            models.VendorCanteen.canteen_id == models.Order.canteen_id
-        )
-        .filter(models.VendorCanteen.user_id == user["id"])
-        .filter(models.Order.status == "placed")
-        .all()
-    )
+    # # vendor email → vendor canteen
+    # canteen = db.query(models.Canteen).filter(
+    #     models.Canteen.vendor_phone.isnot(None)
+    # ).first()
+    canteen = db.query(models.Canteen).filter(
+        models.Canteen.vendor_email == user["sub"]
+    ).first()
+
+    if not canteen:
+        return []
+
+    orders = db.query(models.Order).filter(
+        models.Order.canteen_id == canteen.id,
+        models.Order.status == "placed"
+    ).all()
 
     return orders
 
