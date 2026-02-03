@@ -82,7 +82,7 @@ class ApiClient {
 
 
   async getCurrentUser(): Promise<User> {
-    return this.request<User>("/auth/me")
+    return this.request<User>("/users/me")
   }
 
   logout() {
@@ -101,12 +101,9 @@ class ApiClient {
 
   // Canteen endpoints
   async getCanteensByCollege(collegeId: number): Promise<Canteen[]> {
-    return this.request<Canteen[]>(`/canteens/${collegeId}`)
+    return this.request<Canteen[]>(`/canteens/college/${collegeId}`)
   }
 
-  async getAllCanteens(): Promise<Canteen[]> {
-    return this.request<Canteen[]>("/canteens/")
-  }
 
   // Menu endpoints
   async getMenuByCanteen(canteenId: number): Promise<MenuItem[]> {

@@ -19,3 +19,8 @@ def get_db():
 @router.get("/", response_model=list[CanteenOut])
 def list_canteens(db: Session = Depends(get_db)):
     return db.query(Canteen).all()
+
+
+@router.get("/college/{college_id}", response_model=list[CanteenOut])
+def get_canteens_by_college(college_id: int,db: Session = Depends(get_db)):
+    return db.query(Canteen).filter(Canteen.college_id == college_id).all()

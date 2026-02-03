@@ -58,15 +58,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [fetchUser])
 
   const login = async (idToken: string, collegeId: number): Promise<User> => {
+    // 1️⃣ Google login → only token
     const response = await api.googleLogin(idToken, collegeId)
+
+    // 2️⃣ save token
     api.setToken(response.access_token)
+
+    // 3️⃣ fetch actual user from backend
+    const me = await api.getCurrentUser()
+
     if (typeof window !== "undefined") {
-      localStorage.setItem("user", JSON.stringify(response.user))
+      localStorage.setItem("user", JSON.stringify(me))
       localStorage.setItem("selected_college_id", String(collegeId))
     }
-    setUser(response.user)
-    return response.user
+
+    // 4️⃣ update state
+    setUser(me)
+    return me
   }
+
 
   const logout = () => {
     api.logout()
