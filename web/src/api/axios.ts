@@ -1,7 +1,8 @@
 import axios from "axios";
 
-const api = axios.create({
-    baseURL: "https://campusx-43j7.onrender.com",
+export const api = axios.create({
+    baseURL: import.meta.env.VITE_API_URL,
+    withCredentials: false,
 });
 
 api.interceptors.request.use((config) => {
@@ -11,5 +12,3 @@ api.interceptors.request.use((config) => {
     }
     return config;
 });
-
-export default api;

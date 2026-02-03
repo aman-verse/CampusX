@@ -1,53 +1,52 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-
-import CollegeSelect from "./pages/CollegeSelect";
+import { Routes, Route } from "react-router-dom";
 import Login from "./pages/Login";
 import Student from "./pages/Student";
 import Vendor from "./pages/Vendor";
 import Admin from "./pages/Admin";
-
 import ProtectedRoute from "./components/ProtectedRoute";
+import Delivery from "./pages/Delivery";
 
-function App() {
+export default function App() {
   return (
-    <BrowserRouter>
-      <Routes>
+    <Routes>
+      <Route path="/" element={<Login />} />
 
-        {/* Public routes */}
-        <Route path="/" element={<CollegeSelect />} />
-        <Route path="/login" element={<Login />} />
+      <Route
+        path="/student"
+        element={
+          <ProtectedRoute roles={["student"]}>
+            <Student />
+          </ProtectedRoute>
+        }
+      />
 
-        {/* Protected routes */}
-        <Route
-          path="/student"
-          element={
-            <ProtectedRoute>
-              <Student />
-            </ProtectedRoute>
-          }
-        />
+      <Route
+        path="/vendor"
+        element={
+          <ProtectedRoute roles={["vendor"]}>
+            <Vendor />
+          </ProtectedRoute>
+        }
+      />
 
-        <Route
-          path="/vendor"
-          element={
-            <ProtectedRoute>
-              <Vendor />
-            </ProtectedRoute>
-          }
-        />
+      <Route
+        path="/admin"
+        element={
+          <ProtectedRoute roles={["admin"]}>
+            <Admin />
+          </ProtectedRoute>
+        }
+      />
 
-        <Route
-          path="/admin"
-          element={
-            <ProtectedRoute>
-              <Admin />
-            </ProtectedRoute>
-          }
-        />
-
-      </Routes>
-    </BrowserRouter>
+      <Route
+        path="/delivery"
+        element={
+          <ProtectedRoute>
+            <Delivery />
+          </ProtectedRoute>
+        }
+      />
+    </Routes>
+    
   );
 }
-
-export default App;

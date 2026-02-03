@@ -1,68 +1,86 @@
 import { useEffect, useState } from "react";
-import api from "../api/axios";
-
-interface OrderItem {
-    name: string;
-    quantity: number;
-}
-
-interface Order {
-    id: number;
-    status: string;
-    items: OrderItem[];
-    created_at: string;
-}
+import AppLayout from "../layouts/AppLayout";
+import {
+    getVendorOrders,
+    acceptOrder,
+    rejectOrder,
+} from "../api/vendor.api";
+import type { VendorOrder } from "../types/vendorOrder";
+import StatusBadge from "../components/StatusBadge";
+import { openWhatsApp } from "../utils/whatsapp";
 
 export default function Vendor() {
-    const [orders, setOrders] = useState<Order[]>([]);
-
-    const fetchOrders = () => {
-        api.get("/orders/vendor")
-            .then(res => setOrders(res.data))
-            .catch(err => console.error("Failed to load orders", err));
-    };
+    const [orders, setOrders] = useState<VendorOrder[]>([]);
+    const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-        fetchOrders(); // initial load
+        const loadOrders = async () => {
+            try {
+                const data = await getVendorOrders();
+                setOrders(data);
+            } catch (err) {
+                console.error(err);
+            }
+        };
 
-        const interval = setInterval(() => {
-            fetchOrders();
-        }, 10000); // ⏱️ polling every 10 sec
-
-        return () => clearInterval(interval);
+        loadOrders();
     }, []);
 
+    const handleAccept = async (id: number) => {
+        setLoading(true);
+        await acceptOrder(id);
+        const data = await getVendorOrders();
+        setOrders(data);
+        setLoading(false);
+    };
+
+    const handleReject = async (id: number) => {
+        setLoading(true);
+        await rejectOrder(id);
+        const data = await getVendorOrders();
+        setOrders(data);
+        setLoading(false);
+    };
+
     return (
-        <div style={{ padding: "30px" }}>
-            <h2>Vendor Dashboard</h2>
+        <AppLayout>
+            <h2>Vendor Panel</h2>
 
             {orders.length === 0 && <p>No orders yet</p>}
-
-            {orders.map(order => (
+            {orders.map((o) => (
                 <div
-                    key={order.id}
+                    key={o.id}
                     style={{
-                        border: "1px solid #ccc",
-                        padding: "10px",
-                        marginBottom: "10px"
+                        border: "1px solid #ddd",
+                        padding: 12,
+                        marginBottom: 12,
                     }}
                 >
-                    <h4>Order #{order.id}</h4>
-                    <p>Status: {order.status}</p>
+                    <p>
+                        Order #{o.id} — <StatusBadge status={o.status} />
+                    </p>
 
                     <ul>
-                        {order.items.map((item, idx) => (
+                        {o.items.map((i, idx) => (
                             <li key={idx}>
-                                {item.name} × {item.quantity}
+                                Item {i.menu_item_id} × {i.quantity}
                             </li>
                         ))}
                     </ul>
 
-                    <small>
-                        {new Date(order.created_at).toLocaleString()}
-                    </small>
+                    {o.status === "placed" && (
+                        <>
+                            <button onClick={() => handleAccept(o.id)}>Accept</button>
+                            <button onClick={() => handleReject(o.id)}>Reject</button>
+                            <button onClick={() => openWhatsApp("91XXXXXXXXXX", o.id)}>
+                                WhatsApp
+                            </button>
+                        </>
+                    )}
                 </div>
             ))}
-        </div>
+
+            {loading && <p>Updating...</p>}
+        </AppLayout>
     );
 }

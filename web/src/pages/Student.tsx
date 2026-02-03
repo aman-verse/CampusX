@@ -1,99 +1,84 @@
 import { useEffect, useState } from "react";
-import api from "../api/axios";
+import CollegeSelect from "../components/CollegeSelect";
+import MenuList from "../components/MenuList";
+import { getCanteens } from "../api/canteen.api";
+import { getMenu } from "../api/menu.api";
+import { placeOrder } from "../api/order.api";
+import type{ Canteen } from "../types/canteen";
+import type{ MenuItem } from "../types/menu";
+import AppLayout  from "../layouts/AppLayout";
 
-interface MenuItem {
-    id: number;
-    name: string;
-    price: number;
-}
-
-interface CartItem extends MenuItem {
-    quantity: number;
-}
 
 export default function Student() {
+    const [collegeId, setCollegeId] = useState<number | null>(null);
+    const [canteens, setCanteens] = useState<Canteen[]>([]);
+    const [canteenId, setCanteenId] = useState<number | null>(null);
     const [menu, setMenu] = useState<MenuItem[]>([]);
-    const [cart, setCart] = useState<CartItem[]>([]);
-
-    // TEMP: single canteen (for campus MVP)
-    const CANTEEN_ID = 1;
+    const [loading, setLoading] = useState(false);
+    const [message, setMessage] = useState<string>("");
 
     useEffect(() => {
-        api.get(`/menu/${CANTEEN_ID}`)
-            .then(res => setMenu(res.data))
-            .catch(err => console.error("Menu load failed", err));
-    }, []);
-
-    const addToCart = (item: MenuItem) => {
-        setCart(prev => {
-            const existing = prev.find(i => i.id === item.id);
-            if (existing) {
-                return prev.map(i =>
-                    i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i
-                );
-            }
-            return [...prev, { ...item, quantity: 1 }];
-        });
-    };
-
-    const placeOrder = async () => {
-        if (cart.length === 0) {
-            alert("Cart is empty");
-            return;
+        if (collegeId) {
+            getCanteens(collegeId).then(setCanteens);
         }
+    }, [collegeId]);
+
+    useEffect(() => {
+        if (canteenId) {
+            getMenu(canteenId).then(setMenu);
+        }
+    }, [canteenId]);
+
+    const handleOrder = async (menuItemId: number) => {
+        if (!canteenId) return;
+
+        setLoading(true);
+        setMessage("");
 
         try {
-            const payload = {
-                items: cart.map(i => ({
-                    menu_item_id: i.id,
-                    quantity: i.quantity,
-                })),
-            };
-
-            const res = await api.post("/orders", payload);
-
-            const phone = res.data.canteen_phone;
-
-            const message = `
-New Order 🍽️
-
-Items:
-${cart.map(i => `- ${i.name} x${i.quantity}`).join("\n")}
-
-Thank you!
-      `;
-
-            const url = `https://wa.me/91${phone}?text=${encodeURIComponent(message)}`;
-            window.open(url, "_blank");
-
-            setCart([]);
+            const res = await placeOrder({
+                canteen_id: canteenId,
+                items: [{ menu_item_id: menuItemId, quantity: 1 }],
+            });
+            setMessage(`✅ Order placed (status: ${res.status})`);
         } catch (err) {
             console.error(err);
-            alert("Order failed");
+            setMessage("❌ Order failed (check login or try again)");
+        } finally {
+            setLoading(false);
         }
     };
 
     return (
-        <div style={{ padding: "30px" }}>
-            <h2>Student Dashboard</h2>
+        <AppLayout>
+            <h2>Student Panel</h2>
 
-            <h3>Menu</h3>
-            {menu.map(item => (
-                <div key={item.id}>
-                    {item.name} - ₹{item.price}
-                    <button onClick={() => addToCart(item)}>Add</button>
-                </div>
-            ))}
+            <CollegeSelect onSelect={setCollegeId} />
 
-            <h3>Cart</h3>
-            {cart.map(item => (
-                <div key={item.id}>
-                    {item.name} x {item.quantity}
-                </div>
-            ))}
+            {canteens.length > 0 && (
+                <>
+                    <h3>Select Canteen</h3>
+                    {canteens.map((c) => (
+                        <button
+                            key={c.id}
+                            onClick={() => setCanteenId(c.id)}
+                            style={{ display: "block", marginBottom: 8 }}
+                        >
+                            {c.name}
+                        </button>
+                    ))}
+                </>
+            )}
 
-            <br />
-            <button onClick={placeOrder}>Place Order</button>
-        </div>
+            {menu.length > 0 && (
+                <>
+                    <h3>Menu</h3>
+                    <MenuList items={menu} onOrder={handleOrder} />
+                </>
+            )}
+
+            {loading && <p>⏳ Placing order...</p>}
+            {message && <p>{message}</p>}
+        </AppLayout>
     );
 }

@@ -1,92 +1,71 @@
 import { useEffect, useState } from "react";
-import api from "../api/axios";
-
-interface User {
-    id: number;
-    name: string;
-    email: string;
-    role: string;
-}
-
-interface College {
-    id: number;
-    name: string;
-    allowed_domains: string;
-    allow_external_emails: boolean;
-}
+import AppLayout from "../layouts/AppLayout";
+import { getColleges, getCanteensByCollege } from "../api/admin.api";
+import type{ College } from "../types/college";
+import type{ Canteen } from "../types/canteen";
+import AddCanteenForm from "../components/AddCanteenForm";
+import AssignVendor from "../components/AssignVendor";
 
 export default function Admin() {
-    const [users, setUsers] = useState<User[]>([]);
     const [colleges, setColleges] = useState<College[]>([]);
-
-    const fetchUsers = () => {
-        api.get("/admin/users")
-            .then(res => setUsers(res.data))
-            .catch(err => console.error("Failed to load users", err));
-    };
-
-    const fetchColleges = () => {
-        api.get("/colleges")
-            .then(res => setColleges(res.data))
-            .catch(err => console.error("Failed to load colleges", err));
-    };
+    const [collegeId, setCollegeId] = useState<number | null>(null);
+    const [canteens, setCanteens] = useState<Canteen[]>([]);
 
     useEffect(() => {
-        fetchUsers();
-        fetchColleges();
+        getColleges().then(setColleges);
     }, []);
 
-    const updateRole = (userId: number, role: string) => {
-        api.patch(`/admin/users/${userId}/role`, { role })
-            .then(() => fetchUsers())
-            .catch(() => alert("Role update failed"));
-    };
-
-    const toggleExternalEmail = (college: College) => {
-        api.patch(`/admin/colleges/${college.id}`, {
-            allowed_domains: college.allowed_domains,
-            allow_external_emails: !college.allow_external_emails,
-        })
-            .then(() => fetchColleges())
-            .catch(() => alert("College update failed"));
-    };
+    useEffect(() => {
+        if (collegeId) {
+            getCanteensByCollege(collegeId).then(setCanteens);
+        }
+    }, [collegeId]);
 
     return (
-        <div style={{ padding: "30px" }}>
-            <h2>Admin Dashboard</h2>
-
-            <h3>Users</h3>
-            {users.map(user => (
-                <div key={user.id} style={{ marginBottom: "8px" }}>
-                    {user.name} ({user.email}) — <b>{user.role}</b>
-                    <select
-                        value={user.role}
-                        onChange={(e) => updateRole(user.id, e.target.value)}
-                        style={{ marginLeft: "10px" }}
-                    >
-                        <option value="student">student</option>
-                        <option value="vendor">vendor</option>
-                        <option value="admin">admin</option>
-                        <option value="delivery">delivery</option>
-                    </select>
-                </div>
-            ))}
-
-            <hr />
+        <AppLayout>
+            <h2>Admin Panel</h2>
 
             <h3>Colleges</h3>
-            {colleges.map(college => (
-                <div key={college.id} style={{ marginBottom: "10px" }}>
-                    <b>{college.name}</b><br />
-                    Domains: {college.allowed_domains}<br />
-                    External Emails:{" "}
-                    <b>{college.allow_external_emails ? "Allowed" : "Blocked"}</b>
-                    <br />
-                    <button onClick={() => toggleExternalEmail(college)}>
-                        Toggle External Email
-                    </button>
+            {colleges.map((c) => (
+                <button
+                    key={c.id}
+                    onClick={() => setCollegeId(c.id)}
+                    style={{ display: "block", marginBottom: 8 }}
+                >
+                    {c.name}
+                </button>
+            ))}
+
+            {collegeId && (
+                <AddCanteenForm
+                    collegeId={collegeId}
+                    onDone={() => {
+                        if (collegeId) {
+                            getCanteensByCollege(collegeId).then(setCanteens);
+                        }
+                    }}
+                />
+            )}
+
+            {canteens.map((c) => (
+                <div key={c.id} style={{ marginBottom: 16 }}>
+                    <strong>{c.name}</strong>
+                    <AssignVendor canteenId={c.id} />
                 </div>
             ))}
-        </div>
+
+            {canteens.length > 0 && (
+                <>
+                    <h3>Canteens</h3>
+                    <ul>
+                        {canteens.map((c) => (
+                            <li key={c.id}>
+                                {c.name} — 📞 {c.vendor_phone}
+                            </li>
+                        ))}
+                    </ul>
+                </>
+            )}
+        </AppLayout>
     );
 }
