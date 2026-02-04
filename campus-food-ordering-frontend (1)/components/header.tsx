@@ -13,7 +13,13 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Utensils, ShoppingCart, User, LogOut, LayoutDashboard } from 'lucide-react';
+import {
+  Utensils,
+  ShoppingCart,
+  User,
+  LogOut,
+  LayoutDashboard,
+} from 'lucide-react';
 
 export function Header() {
   const { user, logout, isAuthenticated } = useAuth();
@@ -32,10 +38,30 @@ export function Header() {
     }
   };
 
+  // ✅ SAFE INITIALS
+  const getInitials = () => {
+    if (user?.name) {
+      return user.name
+        .split(' ')
+        .map((n) => n[0])
+        .join('')
+        .toUpperCase();
+    }
+
+    if (user?.email) {
+      return user.email[0].toUpperCase();
+    }
+
+    return 'U';
+  };
+
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur">
       <div className="container flex h-16 items-center justify-between">
-        <Link href={isAuthenticated ? getDashboardLink() : '/'} className="flex items-center gap-2">
+        <Link
+          href={isAuthenticated ? getDashboardLink() : '/'}
+          className="flex items-center gap-2"
+        >
           <Utensils className="h-6 w-6 text-primary" />
           <span className="font-semibold text-lg">Campus Eats</span>
         </Link>
@@ -46,9 +72,7 @@ export function Header() {
               <Button variant="ghost" size="icon" className="relative">
                 <ShoppingCart className="h-5 w-5" />
                 {itemCount > 0 && (
-                  <Badge
-                    className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
-                  >
+                  <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 text-xs flex items-center justify-center">
                     {itemCount}
                   </Badge>
                 )}
@@ -59,34 +83,39 @@ export function Header() {
           {isAuthenticated && user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-9 w-9 rounded-full">
+                <Button variant="ghost" className="h-9 w-9 rounded-full">
                   <Avatar className="h-9 w-9">
-                    <AvatarImage src={user.picture || "/placeholder.svg"} alt={user.name} />
-                    <AvatarFallback>
-                      {user.name
-                        .split(' ')
-                        .map((n) => n[0])
-                        .join('')
-                        .toUpperCase()}
-                    </AvatarFallback>
+                    <AvatarImage
+                      src={user.picture || '/placeholder.svg'}
+                      alt={user.name || 'User'}
+                    />
+                    <AvatarFallback>{getInitials()}</AvatarFallback>
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-56" align="end" forceMount>
-                <div className="flex flex-col space-y-1 p-2">
-                  <p className="text-sm font-medium">{user.name}</p>
-                  <p className="text-xs text-muted-foreground">{user.email}</p>
-                  <Badge variant="secondary" className="w-fit mt-1 capitalize">
+
+              <DropdownMenuContent className="w-56" align="end">
+                <div className="p-2 space-y-1">
+                  <p className="text-sm font-medium">
+                    {user.name || 'User'}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {user.email}
+                  </p>
+                  <Badge variant="secondary" className="capitalize">
                     {user.role}
                   </Badge>
                 </div>
+
                 <DropdownMenuSeparator />
+
                 <DropdownMenuItem asChild>
                   <Link href={getDashboardLink()} className="flex items-center">
                     <LayoutDashboard className="mr-2 h-4 w-4" />
                     Dashboard
                   </Link>
                 </DropdownMenuItem>
+
                 {user.role === 'student' && (
                   <DropdownMenuItem asChild>
                     <Link href="/orders" className="flex items-center">
@@ -95,8 +124,13 @@ export function Header() {
                     </Link>
                   </DropdownMenuItem>
                 )}
+
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={logout} className="text-destructive">
+
+                <DropdownMenuItem
+                  onClick={logout}
+                  className="text-destructive"
+                >
                   <LogOut className="mr-2 h-4 w-4" />
                   Sign out
                 </DropdownMenuItem>

@@ -22,7 +22,8 @@ function DashboardContent() {
   useEffect(() => {
     async function fetchVendors() {
       try {
-        const data = await api.getVendors();
+        const data = await api.getMyOrders()
+;
         setVendors(data);
         setFilteredVendors(data);
       } catch (error) {

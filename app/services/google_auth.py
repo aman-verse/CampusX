@@ -52,7 +52,8 @@ def google_login(db: Session, id_token_str: str, college_id: int):
     # Issue JWT
     token = create_access_token({
         "sub": user.email,
-        "role": user.role
+        "role": user.role,
+        "id": user.id   # 🔥 IMPORTANT
     })
 
     return token, None
