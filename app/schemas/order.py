@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from typing import List
+from datetime import datetime
 
 
 class OrderItemCreate(BaseModel):
@@ -18,9 +19,20 @@ class OrderResponse(BaseModel):
 class OrderItemOut(BaseModel):
     menu_item_id: int
     quantity: int
+    class Config:
+        orm_mode = True
 
+class CanteenOut(BaseModel):
+    id: int
+    name: str
 
 class OrderOut(BaseModel):
     id: int
     status: str
-    items: list[OrderItemOut]
+    total_amount: float
+    created_at: datetime
+    canteen: CanteenOut
+    items: List[OrderItemOut]
+
+    class Config:
+        orm_mode = True

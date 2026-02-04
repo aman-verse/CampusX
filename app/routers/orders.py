@@ -35,9 +35,17 @@ def my_orders(
     db: Session = Depends(get_db),
     user=Depends(require_roles(["student"]))
 ):
+    db_user = db.query(models.User).filter(
+        models.User.email == user["sub"]
+    ).first()
+
+    if not db_user:
+        return []
+
     return (
         db.query(models.Order)
-        .filter(models.Order.user_id == user["id"])
+        .filter(models.Order.user_id == db_user.id)
+        .order_by(models.Order.created_at.desc())
         .all()
     )
 

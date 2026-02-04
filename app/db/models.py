@@ -56,15 +56,16 @@ class MenuItem(Base):
 class Order(Base):
     __tablename__ = "orders"
 
-    id = Column(Integer, primary_key=True)
-    status = Column(String, default="placed")
-    created_at = Column(DateTime, default=datetime.utcnow)
-
+    id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"))
     canteen_id = Column(Integer, ForeignKey("canteens.id"))
 
-    user = relationship("User", back_populates="orders")
-    canteen = relationship("Canteen", back_populates="orders")
+    status = Column(String, default="placed")
+    total_amount = Column(float, default=0)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    user = relationship("User")
+    canteen = relationship("Canteen")
     items = relationship("OrderItem", back_populates="order")
 
 

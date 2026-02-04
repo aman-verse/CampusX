@@ -5,12 +5,12 @@ from app.db import models
 from datetime import datetime
 from app.db import models
 from app.services.whatsapp import build_whatsapp_url
-
 from fastapi import HTTPException
 from app.db import models
 from app.services.whatsapp import build_whatsapp_url
 
 def create_order(db, user_id: int, canteen_id: int, items: list):
+    total = 0
     print("DEBUG: user_id =", user_id)
     print("DEBUG: canteen_id =", canteen_id)
     print("DEBUG: items =", items)
@@ -26,7 +26,8 @@ def create_order(db, user_id: int, canteen_id: int, items: list):
 
     order = models.Order(
         user_id=user_id,
-        canteen_id=canteen_id
+        canteen_id=canteen_id,
+        status="placed"
     )
     db.add(order)
     db.commit()
@@ -37,14 +38,23 @@ def create_order(db, user_id: int, canteen_id: int, items: list):
     for item in items:
         print("DEBUG: adding item", item.menu_item_id, item.quantity)
 
-        db.add(models.OrderItem(
+        menu_item = db.query(models.MenuItem).filter(
+            models.MenuItem.id == item.menu_item_id
+        ).first()
+
+        price = menu_item.price * item.quantity
+        total += price
+
+        order_item = models.OrderItem(
             order_id=order.id,
             menu_item_id=item.menu_item_id,
             quantity=item.quantity
-        ))
-
+        )
+        db.add(order_item)
+    order.total_amount = total
     db.commit()
-
+    db.refresh(order)
+    
     whatsapp_url = build_whatsapp_url(
         phone=canteen.vendor_phone,
         order_id=order.id,
