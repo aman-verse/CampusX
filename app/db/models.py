@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Boolean
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Boolean,Float
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from app.db.database import Base
@@ -61,7 +61,7 @@ class Order(Base):
     canteen_id = Column(Integer, ForeignKey("canteens.id"))
 
     status = Column(String, default="placed")
-    total_amount = Column(float, default=0)
+    total_amount = Column(Float, default=0.0)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     user = relationship("User")

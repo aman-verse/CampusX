@@ -7,7 +7,6 @@ class OrderItemCreate(BaseModel):
     menu_item_id: int
     quantity: int
 
-
 class OrderCreate(BaseModel):
     canteen_id: int          # ✅ ADD THIS
     items: list[OrderItemCreate]
