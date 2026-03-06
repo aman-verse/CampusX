@@ -20,3 +20,4 @@ class TokenSchema(BaseModel):
 class GoogleLoginSchema(BaseModel):
     id_token: str
     college_id: int
+

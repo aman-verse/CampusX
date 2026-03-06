@@ -23,3 +23,4 @@ def google_auth(data: GoogleLoginSchema, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail=error)
 
     return {"access_token": token}
+

@@ -11,7 +11,7 @@ class User(Base):
     email = Column(String, unique=True, index=True, nullable=False)
     password = Column(String, nullable=True)
     role = Column(String, nullable=False)
-
+    external_email_allowed = Column(Boolean, default=False)
     orders = relationship("Order", back_populates="user")
 
 

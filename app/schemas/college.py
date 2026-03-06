@@ -7,4 +7,8 @@ class CollegeOut(BaseModel):
 class CollegeUpdate(BaseModel):
     allowed_domains: str
     allow_external_emails: bool
-    
+
+class CollegeCreate(BaseModel):
+    name: str
+    allowed_domains: str
+    allow_external_emails: bool

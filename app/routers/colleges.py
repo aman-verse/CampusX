@@ -19,3 +19,4 @@ def get_db():
 @router.get("/", response_model=list[CollegeOut])
 def get_colleges(db: Session = Depends(get_db)):
     return list_colleges(db)
+

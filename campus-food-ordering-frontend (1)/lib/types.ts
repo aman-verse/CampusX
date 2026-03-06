@@ -1,12 +1,20 @@
-// User types
-export type UserRole = "student" | "vendor" | "admin"
+// ================= USER TYPES =================
+
+export type UserRole =
+  | "student"
+  | "vendor"
+  | "admin"
+  | "superadmin"
+  | "delivery"
 
 export interface User {
   id: number
   name: string
   email: string
-  password?: string | null
   role: UserRole
+  created_at: string
+  picture?: string
+  external_email_allowed?: boolean
 }
 
 export interface AuthResponse {
@@ -14,7 +22,10 @@ export interface AuthResponse {
   user: User
 }
 
-// College types
+//////////////////////////////////////////////////
+
+// ================= COLLEGE TYPES =================
+
 export interface College {
   id: number
   name: string
@@ -22,7 +33,24 @@ export interface College {
   allow_external_emails: boolean
 }
 
-// Canteen types
+//////////////////////////////////////////////////
+
+// ================= VENDOR TYPES =================
+
+export interface Vendor {
+  id: number
+  name: string
+  description: string
+  location: string
+  image_url?: string
+  rating: number
+  is_open: boolean
+}
+
+//////////////////////////////////////////////////
+
+// ================= CANTEEN TYPES =================
+
 export interface Canteen {
   id: number
   name: string
@@ -31,7 +59,10 @@ export interface Canteen {
   vendor_phone: string
 }
 
-// Menu types
+//////////////////////////////////////////////////
+
+// ================= MENU TYPES =================
+
 export interface MenuItem {
   id: number
   name: string
@@ -39,8 +70,15 @@ export interface MenuItem {
   canteen_id: number
 }
 
-// Order types
-export type OrderStatus = "placed" | "accepted" | "rejected" | "delivered"
+//////////////////////////////////////////////////
+
+// ================= ORDER TYPES =================
+
+export type OrderStatus =
+  | "placed"
+  | "accepted"
+  | "rejected"
+  | "delivered"
 
 export interface OrderItem {
   menu_item_id: number
@@ -61,7 +99,10 @@ export interface CreateOrderPayload {
   items: OrderItem[]
 }
 
-// Cart types (client-side only)
+//////////////////////////////////////////////////
+
+// ================= CART TYPES =================
+
 export interface CartItem {
   menu_item_id: number
   name: string

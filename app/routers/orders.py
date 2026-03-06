@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session,joinedload
 from app.schemas.order import OrderCreate, OrderOut
 from app.services.order_service import create_order, accept_order, deliver_order
 from app.utils.helpers import require_roles
@@ -63,7 +63,7 @@ def vendor_orders(
     if not canteen:
         return []
 
-    return db.query(models.Order).filter(
+    return db.query(models.Order).options(joinedload(models.Order.items)).filter(
         models.Order.canteen_id == canteen.id,
         models.Order.status == "placed"
     ).all()

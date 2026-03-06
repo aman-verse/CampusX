@@ -32,9 +32,24 @@ def google_login(db: Session, id_token_str: str, college_id: int):
         return None, "College not found"
 
     domain = email.split("@")[-1]
+
     allowed_domains = [d.strip() for d in college.allowed_domains.split(",")]
 
-    if domain not in allowed_domains and not college.allow_external_emails:
+    user = db.query(User).filter(User.email == email).first()
+
+    # Admin always allowed
+    if user and user.role == "admin":
+        pass
+
+    # Domain allowed
+    elif domain in allowed_domains:
+        pass
+
+    # Admin-approved external user
+    elif user and user.external_email_allowed:
+        pass
+
+    else:
         return None, "Email domain not allowed for this college"
 
     # Create or login user
@@ -55,5 +70,6 @@ def google_login(db: Session, id_token_str: str, college_id: int):
         "role": user.role,
         "id": user.id   # 🔥 IMPORTANT
     })
+    
 
     return token, None

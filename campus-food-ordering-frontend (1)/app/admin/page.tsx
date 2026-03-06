@@ -380,9 +380,10 @@ export default function AdminPage() {
                             <p>Canteen ID: {order.canteen_id}</p>
                             <p>
                               Items:{" "}
-                              {order.items
-                                .map((i) => `Item #${i.menu_item_id} x${i.quantity}`)
-                                .join(", ")}
+                              {(order.items || []).map((i) =>
+                                `Item #${i.menu_item_id} x${i.quantity}`
+                              ).join(", ")}
+
                             </p>
                             <p>Placed: {formatDate(order.created_at)}</p>
                           </div>

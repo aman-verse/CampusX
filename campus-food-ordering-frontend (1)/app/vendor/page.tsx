@@ -315,7 +315,7 @@ export default function VendorPage() {
                         </CardHeader>
                         <CardContent>
                           <div className="space-y-2 mb-4">
-                            {order.items.map((item, idx) => (
+                            {(order.items || []).map((item, idx) => (
                               <div
                                 key={idx}
                                 className="flex justify-between text-sm"

@@ -6,10 +6,12 @@ import {
   useEffect,
   useState,
   useCallback,
+  useRef,
   type ReactNode,
 } from "react"
 import { api } from "./api"
 import type { User, UserRole } from "./types"
+import { redirect } from "next/dist/server/api-utils"
 
 interface AuthContextType {
   user: User | null
@@ -19,64 +21,84 @@ interface AuthContextType {
   logout: () => void
   hasRole: (roles: UserRole | UserRole[]) => boolean
 }
-
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-
+  const redirected = useRef(false)
   const fetchUser = useCallback(async () => {
     const token = api.getToken()
 
-    if (!token) {
-      setIsLoading(false)
-      return
+
+if (!token) {
+  setIsLoading(false)
+  return
+}
+
+try {
+  const me = await api.getCurrentUser()
+
+  setUser(me)
+
+  if (typeof window !== "undefined"  && !redirected.current) {
+    redirected.current = true
+    let target = ""
+
+    switch (me.role) {
+      case "student":
+        target = "/student/dashboard"
+        break
+      case "vendor":
+        target = "/vendor"
+        break
+      case "admin":
+        target = "/admin"
+        break
+      case "superadmin":
+        target = "/superadmin"
+        break
     }
 
-    try {
-      // 🔐 validate token with backend
-      const me = await api.getCurrentUser()
-
-      setUser(me)
-
-      if (typeof window !== "undefined") {
-        localStorage.setItem("user", JSON.stringify(me))
-      }
-    } catch (error) {
-      // ❌ token expired / invalid
-      api.logout()
-      setUser(null)
-    } finally {
-      setIsLoading(false)
+    // ✅ redirect only if not already on that page
+    if (target && window.location.pathname !== target) {
+      window.location.href = target
     }
+  }
+
+} catch (error) {
+  api.logout()
+  setUser(null)
+} finally {
+  setIsLoading(false)
+}
+
+
   }, [])
-
 
   useEffect(() => {
     fetchUser()
   }, [fetchUser])
 
   const login = async (idToken: string, collegeId: number): Promise<User> => {
-    // 1️⃣ Google login → only token
-    const response = await api.googleLogin(idToken, collegeId)
 
-    // 2️⃣ save token
-    api.setToken(response.access_token)
 
-    // 3️⃣ fetch actual user from backend
-    const me = await api.getCurrentUser()
+const response = await api.googleLogin(idToken, collegeId)
 
-    if (typeof window !== "undefined") {
-      localStorage.setItem("user", JSON.stringify(me))
-      localStorage.setItem("selected_college_id", String(collegeId))
-    }
+api.setToken(response.access_token)
 
-    // 4️⃣ update state
-    setUser(me)
-    return me
+const me = await api.getCurrentUser()
+
+if (typeof window !== "undefined") {
+  localStorage.setItem("user", JSON.stringify(me))
+  localStorage.setItem("selected_college_id", String(collegeId))
+}
+
+setUser(me)
+return me
+
+
   }
-
 
   const logout = () => {
     api.logout()
@@ -107,8 +129,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 export function useAuth() {
   const context = useContext(AuthContext)
+
   if (context === undefined) {
     throw new Error("useAuth must be used within an AuthProvider")
   }
+
   return context
 }

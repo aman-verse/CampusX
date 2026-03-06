@@ -342,8 +342,8 @@ function VendorsManagementContent() {
 
 export default function VendorsManagementPage() {
   return (
-    <ProtectedRoute allowedRoles={['admin']}>
+    <ProtectedRoute allowedRoles={['admin', 'superadmin']}>
       <VendorsManagementContent />
     </ProtectedRoute>
-  );
+  )
 }

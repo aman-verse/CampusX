@@ -1,13 +1,18 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.db.database import engine
+from app.db.database import engine,SessionLocal
 from app.db import models
 from app.routers import auth,users,orders,canteens,menu,admin,auth_google,colleges
+from app.core.bootstrap import create_super_admin
+from app.routers import superadmin
 
 app = FastAPI()
 
 # create tables
 models.Base.metadata.create_all(bind=engine)
+db = SessionLocal()
+create_super_admin(db)
+db.close()
 
 @app.get("/")
 def root():
@@ -42,4 +47,4 @@ app.include_router(menu.router)
 app.include_router(admin.router)
 app.include_router(auth_google.router)
 app.include_router(colleges.router)
-
+app.include_router(superadmin.router)
