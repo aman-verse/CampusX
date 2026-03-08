@@ -1,379 +1,493 @@
 "use client"
 
-import React from "react"
-
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
 import { api } from "@/lib/api"
-import type { Order, OrderStatus, Canteen, MenuItem } from "@/lib/types"
+
+import type { Order, Canteen, MenuItem } from "@/lib/types"
+
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle,
+  CardTitle
 } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+
 import { Button } from "@/components/ui/button"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { useToast } from "@/hooks/use-toast"
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
+
 import {
-  Package,
-  Clock,
-  CheckCircle,
-  XCircle,
-  Truck,
-  Utensils,
-  LogOut,
   Loader2,
+  CheckCircle,
+  Truck,
+  XCircle,
+  Utensils,
+  LogOut
 } from "lucide-react"
 
-const statusConfig: Record<
-  OrderStatus,
-  { label: string; color: string; icon: React.ReactNode }
-> = {
-  placed: {
-    label: "Placed",
-    color: "bg-yellow-100 text-yellow-800",
-    icon: <Clock className="h-4 w-4" />,
-  },
-  accepted: {
-    label: "Accepted",
-    color: "bg-blue-100 text-blue-800",
-    icon: <CheckCircle className="h-4 w-4" />,
-  },
-  rejected: {
-    label: "Rejected",
-    color: "bg-red-100 text-red-800",
-    icon: <XCircle className="h-4 w-4" />,
-  },
-  delivered: {
-    label: "Delivered",
-    color: "bg-green-100 text-green-800",
-    icon: <Truck className="h-4 w-4" />,
-  },
-}
-
 export default function VendorPage() {
+
   const router = useRouter()
-  const { user, isAuthenticated, isLoading: authLoading, logout } = useAuth()
-  const { toast } = useToast()
+  const { user, logout } = useAuth()
 
   const [orders, setOrders] = useState<Order[]>([])
   const [canteen, setCanteen] = useState<Canteen | null>(null)
   const [menuItems, setMenuItems] = useState<MenuItem[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState("placed")
+  const [loading, setLoading] = useState(true)
 
-  // Redirect if not authenticated or not a vendor
+  const audio = useRef<HTMLAudioElement | null>(null)
+  const previousOrders = useRef<Order[]>([])
+
+  //////////////////////////////////////////////////
+
   useEffect(() => {
-    if (!authLoading && (!isAuthenticated || user?.role !== "vendor")) {
-      router.push("/login")
+    audio.current = new Audio("/notification.mp3")
+  }, [])
+
+  //////////////////////////////////////////////////
+  // MENU ITEM NAME
+
+  const getItemName = (id: number) => {
+
+    const item = menuItems.find(i => i.id === id)
+
+    return item?.name || `Item #${id}`
+
+  }
+
+  //////////////////////////////////////////////////
+  // FETCH ORDERS
+
+  const fetchOrders = async () => {
+
+    try {
+
+      const data = await api.getVendorOrders()
+
+      if (
+        previousOrders.current.length &&
+        data.length > previousOrders.current.length
+      ) {
+        audio.current?.play()
+      }
+
+      previousOrders.current = data
+
+      setOrders(data)
+
+    } catch (err) {
+      console.error(err)
     }
-  }, [authLoading, isAuthenticated, user, router])
 
-  // Fetch vendor data
+  }
+
+  //////////////////////////////////////////////////
+  // LOAD DATA
+
   useEffect(() => {
-    const fetchData = async () => {
-      if (!user || user.role !== "vendor") return
+
+    const load = async () => {
 
       try {
-        // Fetch all canteens and find the one belonging to this vendor
-        const canteens = await api.getAllCanteens()
-        const vendorCanteen = canteens.find(
-          (c) => c.vendor_email === user.email
-        )
 
-        if (vendorCanteen) {
-          setCanteen(vendorCanteen)
-          // Fetch menu items for this canteen
-          const menu = await api.getMenuByCanteen(vendorCanteen.id)
-          setMenuItems(menu)
-        }
+        const vendorCanteen = await api.getVendorCanteen()
 
-        // Fetch vendor orders
-        const ordersData = await api.getVendorOrders()
-        setOrders(ordersData)
-      } catch (error) {
-        console.error("Failed to fetch vendor data:", error)
-        toast({
-          title: "Error",
-          description: "Failed to load vendor data",
-          variant: "destructive",
-        })
-      } finally {
-        setIsLoading(false)
+        setCanteen(vendorCanteen)
+
+        const menu = await api.getMenuByCanteen(vendorCanteen.id)
+
+        setMenuItems(menu)
+
+        await fetchOrders()
+
+      } catch (err) {
+        console.error(err)
       }
+
+      setLoading(false)
+
     }
 
-    if (isAuthenticated && user?.role === "vendor") {
-      fetchData()
+    if (user?.role === "vendor") {
+      load()
     }
-  }, [isAuthenticated, user, toast])
 
-  const handleAcceptOrder = async (orderId: number) => {
-    try {
-      const updated = await api.acceptOrder(orderId)
-      setOrders((prev) =>
-        prev.map((order) => (order.id === orderId ? updated : order))
-      )
-      toast({
-        title: "Order Accepted",
-        description: `Order #${orderId} has been accepted`,
-      })
-    } catch (error) {
-      console.error("Failed to accept order:", error)
-      toast({
-        title: "Error",
-        description: "Failed to accept order",
-        variant: "destructive",
-      })
-    }
+  }, [user])
+
+  //////////////////////////////////////////////////
+  // AUTO REFRESH
+
+  useEffect(() => {
+
+    const interval = setInterval(fetchOrders, 5000)
+
+    return () => clearInterval(interval)
+
+  }, [])
+
+  //////////////////////////////////////////////////
+  // ACTIONS
+
+  const acceptOrder = async (id: number) => {
+    await api.acceptOrder(id)
+    fetchOrders()
   }
 
-  const handleRejectOrder = async (orderId: number) => {
-    try {
-      const updated = await api.rejectOrder(orderId)
-      setOrders((prev) =>
-        prev.map((order) => (order.id === orderId ? updated : order))
-      )
-      toast({
-        title: "Order Rejected",
-        description: `Order #${orderId} has been rejected`,
-      })
-    } catch (error) {
-      console.error("Failed to reject order:", error)
-      toast({
-        title: "Error",
-        description: "Failed to reject order",
-        variant: "destructive",
-      })
-    }
+  const rejectOrder = async (id: number) => {
+    await api.rejectOrder(id)
+    fetchOrders()
   }
 
-  const handleDeliverOrder = async (orderId: number) => {
-    try {
-      const updated = await api.markOrderDelivered(orderId)
-      setOrders((prev) =>
-        prev.map((order) => (order.id === orderId ? updated : order))
-      )
-      toast({
-        title: "Order Delivered",
-        description: `Order #${orderId} has been marked as delivered`,
-      })
-    } catch (error) {
-      console.error("Failed to deliver order:", error)
-      toast({
-        title: "Error",
-        description: "Failed to mark order as delivered",
-        variant: "destructive",
-      })
-    }
+  const deliverOrder = async (id: number) => {
+
+    await api.markOrderDelivered(id)
+
+    fetchOrders()
+
   }
+
+  //////////////////////////////////////////////////
 
   const handleLogout = () => {
+
     logout()
+
     router.push("/login")
+
   }
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString()
-  }
+  //////////////////////////////////////////////////
 
-  const filterOrders = (status: string) => {
-    if (status === "all") return orders
-    return orders.filter((order) => order.status === status)
-  }
+  if (loading) {
 
-  const getMenuItemName = (menuItemId: number) => {
-    const item = menuItems.find((m) => m.id === menuItemId)
-    return item?.name || `Item #${menuItemId}`
-  }
-
-  const getMenuItemPrice = (menuItemId: number) => {
-    const item = menuItems.find((m) => m.id === menuItemId)
-    return item?.price || 0
-  }
-
-  const getOrderTotal = (order: Order) => {
-    return order.items.reduce((total, item) => {
-      return total + getMenuItemPrice(item.menu_item_id) * item.quantity
-    }, 0)
-  }
-
-  if (authLoading || isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+
+      <div className="flex justify-center items-center min-h-screen">
+
+        <Loader2 className="w-8 h-8 animate-spin" />
+
       </div>
+
     )
+
   }
 
-  const placedCount = orders.filter((o) => o.status === "placed").length
-  const acceptedCount = orders.filter((o) => o.status === "accepted").length
+  //////////////////////////////////////////////////
+  // FILTERS
+
+  const newOrders = orders.filter(o => o.status === "placed")
+  const processingOrders = orders.filter(o => o.status === "accepted")
+  const rejectedOrders = orders.filter(o => o.status === "rejected")
+  const deliveredOrders = orders.filter(o => o.status === "delivered")
+
+  //////////////////////////////////////////////////
 
   return (
-    <div className="min-h-screen bg-muted/30">
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-background border-b">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Utensils className="w-6 h-6 text-primary" />
-            <span className="font-semibold text-lg">Vendor Dashboard</span>
-          </div>
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-muted-foreground">{user?.name}</span>
-            <Button variant="ghost" size="sm" onClick={handleLogout}>
-              <LogOut className="w-4 h-4" />
-            </Button>
-          </div>
+
+    <div className="container mx-auto p-6 max-w-4xl">
+
+      {/* HEADER */}
+
+      <div className="flex justify-between items-center mb-6">
+
+        <div className="flex items-center gap-2">
+
+          <Utensils className="w-6 h-6" />
+
+          <h1 className="text-xl font-bold">
+
+            Vendor Dashboard
+
+          </h1>
+
         </div>
-      </header>
 
-      <main className="container mx-auto px-4 py-6">
-        {/* Canteen Info */}
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>{canteen?.name || "Your Canteen"}</CardTitle>
-            <CardDescription>
-              {canteen
-                ? `Phone: ${canteen.vendor_phone}`
-                : "Manage your orders"}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-3 gap-4">
-              <div className="text-center p-4 rounded-lg bg-yellow-50">
-                <p className="text-2xl font-bold text-yellow-800">
-                  {placedCount}
-                </p>
-                <p className="text-sm text-yellow-600">New Orders</p>
-              </div>
-              <div className="text-center p-4 rounded-lg bg-blue-50">
-                <p className="text-2xl font-bold text-blue-800">
-                  {acceptedCount}
-                </p>
-                <p className="text-sm text-blue-600">In Progress</p>
-              </div>
-              <div className="text-center p-4 rounded-lg bg-green-50">
-                <p className="text-2xl font-bold text-green-800">
-                  {orders.filter((o) => o.status === "delivered").length}
-                </p>
-                <p className="text-sm text-green-600">Delivered</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <Button variant="ghost" onClick={handleLogout}>
+          <LogOut className="w-4 h-4" />
+        </Button>
 
-        {/* Orders */}
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="mb-4">
-            <TabsTrigger value="placed">New ({placedCount})</TabsTrigger>
-            <TabsTrigger value="accepted">In Progress ({acceptedCount})</TabsTrigger>
-            <TabsTrigger value="all">All Orders</TabsTrigger>
-          </TabsList>
+      </div>
 
-          {["placed", "accepted", "all"].map((tab) => (
-            <TabsContent key={tab} value={tab}>
-              {filterOrders(tab).length === 0 ? (
-                <Card className="p-12 text-center">
-                  <div className="mx-auto w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-4">
-                    <Package className="h-6 w-6 text-muted-foreground" />
+      {/* VENDOR INFO */}
+
+      <Card className="mb-6">
+
+        <CardHeader>
+
+          <CardTitle>
+            {canteen?.name}
+          </CardTitle>
+
+          <CardDescription>
+
+            Vendor: {user?.name}
+
+            <br />
+
+            Phone: {canteen?.vendor_phone}
+
+            <br />
+
+            Email: {canteen?.vendor_email}
+
+          </CardDescription>
+
+        </CardHeader>
+
+      </Card>
+
+      {/* TABS */}
+
+      <Tabs defaultValue="new">
+
+        <TabsList>
+
+          <TabsTrigger value="new">New</TabsTrigger>
+
+          <TabsTrigger value="processing">Processing</TabsTrigger>
+
+          <TabsTrigger value="rejected">Rejected</TabsTrigger>
+
+          <TabsTrigger value="delivered">Delivered</TabsTrigger>
+
+          <TabsTrigger value="menu">Menu</TabsTrigger>
+
+        </TabsList>
+
+        {/* NEW */}
+
+        <TabsContent value="new">
+
+          <div className="space-y-4">
+
+            {newOrders.map(order => (
+
+              <Card key={order.id}>
+
+                <CardHeader>
+
+                  <CardTitle>
+
+                    🍽 New Order #{order.id}
+
+                  </CardTitle>
+
+                </CardHeader>
+
+                <CardContent>
+
+                  <p>Token: {order.token}</p>
+
+                  <p>Phone: {order.phone}</p>
+
+                  <p>Address: {order.address}</p>
+
+                  <div className="border-t pt-2 mt-2">
+
+                    {order.items.map((item, i) => (
+
+                      <p key={i}>
+
+                        {getItemName(item.menu_item_id)} × {item.quantity}
+
+                      </p>
+
+                    ))}
+
                   </div>
-                  <h3 className="text-lg font-semibold">No orders</h3>
-                  <p className="text-muted-foreground mt-1">
-                    {tab === "placed"
-                      ? "No new orders at the moment"
-                      : tab === "accepted"
-                      ? "No orders in progress"
-                      : "No orders yet"}
-                  </p>
-                </Card>
-              ) : (
-                <div className="space-y-4">
-                  {filterOrders(tab).map((order) => {
-                    const status = statusConfig[order.status]
 
-                    return (
-                      <Card key={order.id}>
-                        <CardHeader className="pb-2">
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <CardTitle className="text-base">
-                                Order #{order.id}
-                              </CardTitle>
-                              <CardDescription>
-                                User #{order.user_id} • {formatDate(order.created_at)}
-                              </CardDescription>
-                            </div>
-                            <Badge className={`${status.color} flex items-center gap-1`}>
-                              {status.icon}
-                              {status.label}
-                            </Badge>
-                          </div>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="space-y-2 mb-4">
-                            {(order.items || []).map((item, idx) => (
-                              <div
-                                key={idx}
-                                className="flex justify-between text-sm"
-                              >
-                                <span>
-                                  {item.quantity}x {getMenuItemName(item.menu_item_id)}
-                                </span>
-                                <span className="text-muted-foreground">
-                                  Rs. {getMenuItemPrice(item.menu_item_id) * item.quantity}
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                          <div className="flex items-center justify-between pt-4 border-t">
-                            <p className="font-semibold">
-                              Total: Rs. {getOrderTotal(order)}
-                            </p>
-                            <div className="flex gap-2">
-                              {order.status === "placed" && (
-                                <>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => handleRejectOrder(order.id)}
-                                  >
-                                    <XCircle className="w-4 h-4 mr-1" />
-                                    Reject
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    onClick={() => handleAcceptOrder(order.id)}
-                                  >
-                                    <CheckCircle className="w-4 h-4 mr-1" />
-                                    Accept
-                                  </Button>
-                                </>
-                              )}
-                              {order.status === "accepted" && (
-                                <Button
-                                  size="sm"
-                                  onClick={() => handleDeliverOrder(order.id)}
-                                >
-                                  <Truck className="w-4 h-4 mr-1" />
-                                  Mark Delivered
-                                </Button>
-                              )}
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    )
-                  })}
-                </div>
-              )}
-            </TabsContent>
-          ))}
-        </Tabs>
-      </main>
+                  <p className="font-semibold mt-2">
+
+                    Total: ₹{order.total_amount}
+
+                  </p>
+
+                  <div className="flex gap-2 mt-3">
+
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => rejectOrder(order.id)}
+                    >
+
+                      <XCircle className="w-4 h-4 mr-1" />
+                      Reject
+
+                    </Button>
+
+                    <Button
+                      size="sm"
+                      onClick={() => acceptOrder(order.id)}
+                    >
+
+                      <CheckCircle className="w-4 h-4 mr-1" />
+                      Accept
+
+                    </Button>
+
+                  </div>
+
+                </CardContent>
+
+              </Card>
+
+            ))}
+
+          </div>
+
+        </TabsContent>
+
+        {/* PROCESSING */}
+
+        <TabsContent value="processing">
+
+          <div className="space-y-4">
+
+            {processingOrders.map(order => (
+
+              <Card key={order.id}>
+
+                <CardHeader>
+
+                  <CardTitle>
+
+                    🍳 Token #{order.token}
+
+                  </CardTitle>
+
+                </CardHeader>
+
+                <CardContent>
+
+                  <p>Phone: {order.phone}</p>
+
+                  <p>Address: {order.address}</p>
+
+                  <Button
+                    size="sm"
+                    className="mt-3"
+                    onClick={() => deliverOrder(order.id)}
+                  >
+
+                    <Truck className="w-4 h-4 mr-1" />
+                    Delivered
+
+                  </Button>
+
+                </CardContent>
+
+              </Card>
+
+            ))}
+
+          </div>
+
+        </TabsContent>
+
+        {/* REJECTED */}
+
+        <TabsContent value="rejected">
+
+          <div className="space-y-4">
+
+            {rejectedOrders.map(order => (
+
+              <Card key={order.id}>
+
+                <CardHeader>
+
+                  <CardTitle>
+
+                    ❌ Token #{order.token}
+
+                  </CardTitle>
+
+                </CardHeader>
+
+                <CardContent>
+
+                  <p>Order Rejected</p>
+
+                </CardContent>
+
+              </Card>
+
+            ))}
+
+          </div>
+
+        </TabsContent>
+
+        {/* DELIVERED */}
+
+        <TabsContent value="delivered">
+
+          <div className="space-y-4">
+
+            {deliveredOrders.map(order => (
+
+              <Card key={order.id}>
+
+                <CardHeader>
+
+                  <CardTitle>
+
+                    ✅ Token #{order.token}
+
+                  </CardTitle>
+
+                </CardHeader>
+
+                <CardContent>
+
+                  <p>Total ₹{order.total_amount}</p>
+
+                </CardContent>
+
+              </Card>
+
+            ))}
+
+          </div>
+
+        </TabsContent>
+
+        {/* MENU */}
+
+        <TabsContent value="menu">
+
+          <div className="grid gap-4">
+
+            {menuItems.map(item => (
+
+              <Card key={item.id}>
+
+                <CardHeader>
+
+                  <CardTitle>
+
+                    {item.name}
+
+                  </CardTitle>
+
+                  <p>₹{item.price}</p>
+
+                </CardHeader>
+
+              </Card>
+
+            ))}
+
+          </div>
+
+        </TabsContent>
+
+      </Tabs>
+
     </div>
+
   )
+
 }

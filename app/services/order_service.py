@@ -1,15 +1,14 @@
-from http.client import HTTPException
+import token
 from sqlalchemy.orm import Session
 from app.db.models import Order, OrderItem, User
 from app.db import models
 from datetime import datetime
-from app.db import models
+from app.schemas import order
 from app.services.whatsapp import build_whatsapp_url
 from fastapi import HTTPException
-from app.db import models
-from app.services.whatsapp import build_whatsapp_url
+from datetime import datetime, timedelta
 
-def create_order(db, user_id: int, canteen_id: int, items: list):
+def create_order(db, user_id: int, canteen_id: int, phone: str, address: str, items: list):
     total = 0
     print("DEBUG: user_id =", user_id)
     print("DEBUG: canteen_id =", canteen_id)
@@ -23,42 +22,89 @@ def create_order(db, user_id: int, canteen_id: int, items: list):
 
     if not canteen:
         raise HTTPException(status_code=404, detail="Canteen not found")
+    
+    last_order = db.query(models.Order)\
+    .filter(models.Order.canteen_id == canteen_id)\
+    .order_by(models.Order.id.desc())\
+    .first()
+
+    token = 1
+
+    if last_order and last_order.token:
+        token = last_order.token + 1
+
+    recent_order = db.query(models.Order).filter(
+        models.Order.user_id == user_id,
+        models.Order.created_at >= datetime.utcnow() - timedelta(seconds=10)
+    ).first()
+
+    if recent_order:
+        raise HTTPException(
+            status_code=400,
+            detail="Order already placed. Please wait."
+        )
 
     order = models.Order(
         user_id=user_id,
         canteen_id=canteen_id,
+        phone=phone,
+        address=address,
+        token=token,
         status="placed"
     )
+    
     db.add(order)
     db.commit()
     db.refresh(order)
 
     print("DEBUG: order created, id =", order.id)
 
+    order_items_for_msg = []
+
     for item in items:
-        print("DEBUG: adding item", item.menu_item_id, item.quantity)
+        menu_item_id = item["menu_item_id"]
+        quantity = item["quantity"]
 
         menu_item = db.query(models.MenuItem).filter(
-            models.MenuItem.id == item.menu_item_id
+            models.MenuItem.id == menu_item_id
         ).first()
 
-        price = menu_item.price * item.quantity
+        if not menu_item:
+            raise HTTPException(status_code=404, detail=f"Menu item {menu_item_id} not found")
+
+        price = menu_item.price * quantity
         total += price
 
+        order_items_for_msg.append({
+            "name": menu_item.name,
+            "qty": quantity,
+            "price": price
+        })
         order_item = models.OrderItem(
             order_id=order.id,
-            menu_item_id=item.menu_item_id,
-            quantity=item.quantity
+            menu_item_id=menu_item_id,
+            quantity=quantity
         )
         db.add(order_item)
+
     order.total_amount = total
     db.commit()
     db.refresh(order)
     
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
     whatsapp_url = build_whatsapp_url(
         phone=canteen.vendor_phone,
         order_id=order.id,
-        items=items
+        token=order.token,
+        student_name=user.name,
+        student_phone=phone,
+        address=address,
+        items=order_items_for_msg,
+        total=total
     )
 
     print("DEBUG: whatsapp_url =", whatsapp_url)

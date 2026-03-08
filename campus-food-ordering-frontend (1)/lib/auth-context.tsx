@@ -47,7 +47,7 @@ try {
 
     switch (me.role) {
       case "student":
-        target = "/student/dashboard"
+        target = "/student"
         break
       case "vendor":
         target = "/vendor"

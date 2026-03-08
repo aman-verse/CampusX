@@ -164,9 +164,9 @@ class ApiClient {
 
   async createOrder(
     payload: CreateOrderPayload
-  ): Promise<Order> {
+  ): Promise<{ order_id: number; status: string; whatsapp_url?: string }> {
 
-    return this.request<Order>("/orders/", {
+    return this.request<{ order_id: number; status: string; whatsapp_url?: string }>("/orders/", {
       method: "POST",
       body: JSON.stringify(payload)
     })
@@ -176,6 +176,17 @@ class ApiClient {
     return this.request<Order[]>("/orders/my")
   }
 
+  async rejectOrder(id: number) {
+    return this.request(`/orders/vendor/${id}/reject`, {
+      method: "PATCH"
+    })
+  }
+
+  async deleteMenuItem(id: number) {
+    return this.request(`/menu/${id}`, {
+      method: "DELETE"
+    })
+  }
   //////////////////////////////////////////////////
   // VENDOR
   //////////////////////////////////////////////////
@@ -189,6 +200,14 @@ class ApiClient {
       `/orders/vendor/${orderId}/accept`,
       { method: "PATCH" }
     )
+  }
+
+  async getVendorOrderHistory(): Promise<Order[]> {
+    return this.request("/orders/vendor/history")
+  }
+
+  async getVendorCanteen(): Promise<Canteen> {
+    return this.request("/canteens/vendor")
   }
 
   //////////////////////////////////////////////////

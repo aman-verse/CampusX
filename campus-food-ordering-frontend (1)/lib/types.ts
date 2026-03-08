@@ -87,15 +87,21 @@ export interface OrderItem {
 
 export interface Order {
   id: number
+  token: number
   status: OrderStatus
   created_at: string
   user_id: number
   canteen_id: number
+  phone: string
+  address: string
+  total_amount: number
   items: OrderItem[]
 }
 
 export interface CreateOrderPayload {
   canteen_id: number
+  phone: string
+  address: string
   items: OrderItem[]
 }
 

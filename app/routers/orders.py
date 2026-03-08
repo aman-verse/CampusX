@@ -25,9 +25,11 @@ def place_order(
 ):
     return create_order(
         db=db,
-        user_id=user["id"],          # 🔥 FROM JWT
+        user_id=user["id"],
         canteen_id=data.canteen_id,
-        items=data.items
+        phone=data.phone,
+        address=data.address,
+        items=[item.dict() for item in data.items]
     )
 
 @router.get("/my", response_model=list[OrderOut])
@@ -51,11 +53,29 @@ def my_orders(
 
     # ================= VENDOR =================
 
+# @router.get("/vendor", response_model=list[OrderOut])
+# def vendor_orders(
+#     db: Session = Depends(get_db),
+#     user=Depends(require_roles(["vendor"]))
+# ):
+#     canteen = db.query(models.Canteen).filter(
+#         models.Canteen.vendor_email == user["sub"]
+#     ).first()
+
+#     if not canteen:
+#         return []
+
+#     return db.query(models.Order).options(joinedload(models.Order.items)).filter(
+#         models.Order.canteen_id == canteen.id,
+#         models.Order.status != "delivered"
+#     ).all()
+
 @router.get("/vendor", response_model=list[OrderOut])
 def vendor_orders(
     db: Session = Depends(get_db),
     user=Depends(require_roles(["vendor"]))
 ):
+
     canteen = db.query(models.Canteen).filter(
         models.Canteen.vendor_email == user["sub"]
     ).first()
@@ -63,10 +83,13 @@ def vendor_orders(
     if not canteen:
         return []
 
-    return db.query(models.Order).options(joinedload(models.Order.items)).filter(
-        models.Order.canteen_id == canteen.id,
-        models.Order.status == "placed"
-    ).all()
+    return (
+        db.query(models.Order)
+        .options(joinedload(models.Order.items))
+        .filter(models.Order.canteen_id == canteen.id)
+        .order_by(models.Order.created_at.desc())
+        .all()
+    )
 
 @router.patch("/vendor/{order_id}/accept")
 def vendor_accept_order(
@@ -75,15 +98,43 @@ def vendor_accept_order(
     user=Depends(require_roles(["vendor"]))
 ):
     order = accept_order(db, order_id)
-    return {"status": order.status}
+    return order
 
+@router.patch("/vendor/{order_id}/reject")
+def reject_order(
+    order_id: int,
+    db: Session = Depends(get_db),
+    user=Depends(require_roles(["vendor"]))
+):
+    order = db.query(models.Order).get(order_id)
+    order.status = "rejected"
+    db.commit()
+    return order
+
+@router.get("/vendor/history", response_model=list[OrderOut])
+def vendor_order_history(
+    db: Session = Depends(get_db),
+    user=Depends(require_roles(["vendor"]))
+):
+
+    canteen = db.query(models.Canteen).filter(
+        models.Canteen.vendor_email == user["email"]
+    ).first()
+
+    if not canteen:
+        return []
+
+    return db.query(models.Order).filter(
+        models.Order.canteen_id == canteen.id,
+        models.Order.status == "delivered"
+    ).order_by(models.Order.created_at.desc()).all()
 # ================= DELIVERY =================
 
 @router.patch("/delivery/{order_id}/deliver")
 def delivery_deliver_order(
     order_id: int,
     db: Session = Depends(get_db),
-    user=Depends(require_roles(["delivery"]))
+    user=Depends(require_roles(["delivery","vendor"]))
 ):
     order = deliver_order(db, order_id)
     return {"status": order.status}

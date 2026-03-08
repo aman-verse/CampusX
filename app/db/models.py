@@ -59,11 +59,12 @@ class Order(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"))
     canteen_id = Column(Integer, ForeignKey("canteens.id"))
-
     status = Column(String, default="placed")
     total_amount = Column(Float, default=0.0)
     created_at = Column(DateTime, default=datetime.utcnow)
-
+    phone = Column(String(20), nullable=False)
+    address = Column(String, nullable=False)
+    token = Column(Integer)
     user = relationship("User")
     canteen = relationship("Canteen")
     items = relationship("OrderItem", back_populates="order")
