@@ -81,8 +81,12 @@ export type OrderStatus =
   | "delivered"
 
 export interface OrderItem {
-  menu_item_id: number
   quantity: number
+  menu_item: {
+    id: number
+    name: string
+    price: number
+  }
 }
 
 export interface Order {

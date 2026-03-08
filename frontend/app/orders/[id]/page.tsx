@@ -45,7 +45,7 @@ function OrderDetailContent() {
         const orders = await api.getMyOrders()
 
         const foundOrder = orders.find(
-          (o) => o.id === orderId
+          (o) => Number(o.id) === Number(orderId)
         )
 
         if (foundOrder) {
@@ -81,6 +81,25 @@ function OrderDetailContent() {
     }
 
   }, [orderId])
+
+  //////////////////////////////////////////////////
+  // FIX TIME (FORCE IST)
+  //////////////////////////////////////////////////
+
+  const formatDate = (d: string) => {
+
+    const date = new Date(d + "Z")
+
+    return date.toLocaleString("en-IN", {
+      timeZone: "Asia/Kolkata",
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    })
+
+  }
 
   //////////////////////////////////////////////////
   // LOADING
@@ -131,9 +150,17 @@ function OrderDetailContent() {
 
           <CardHeader className="flex flex-row items-center justify-between">
 
-            <CardTitle>
-              Order #{order.token}
-            </CardTitle>
+            <div>
+
+              <CardTitle>
+                Order #{order.token}
+              </CardTitle>
+
+              <p className="text-sm text-muted-foreground">
+                {formatDate(order.created_at)}
+              </p>
+
+            </div>
 
             <Badge>
               {order.status}
@@ -143,29 +170,15 @@ function OrderDetailContent() {
 
           <CardContent className="space-y-4">
 
-            {order.items.map((item, index) => {
+            {order.items.map((item, i) => {
 
-              const menuItem = menu.find(
-                (mi) => mi.id === item.menu_item_id
-              )
+              const itemName = item.menu_item?.name ?? "Item"
+              const price = item.menu_item?.price ?? 0
 
               return (
-
-                <div
-                  key={index}
-                  className="flex justify-between"
-                >
-
-                  <p>
-                    {item.quantity} × {menuItem?.name || "Item"}
-                  </p>
-
-                  <p>
-                    ₹{(menuItem?.price || 0) * item.quantity}
-                  </p>
-
-                </div>
-
+                <p key={i} className="text-sm text-muted-foreground">
+                  {item.quantity} × {itemName}
+                </p>
               )
 
             })}
