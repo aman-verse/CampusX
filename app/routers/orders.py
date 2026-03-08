@@ -53,22 +53,7 @@ def my_orders(
 
     # ================= VENDOR =================
 
-# @router.get("/vendor", response_model=list[OrderOut])
-# def vendor_orders(
-#     db: Session = Depends(get_db),
-#     user=Depends(require_roles(["vendor"]))
-# ):
-#     canteen = db.query(models.Canteen).filter(
-#         models.Canteen.vendor_email == user["sub"]
-#     ).first()
 
-#     if not canteen:
-#         return []
-
-#     return db.query(models.Order).options(joinedload(models.Order.items)).filter(
-#         models.Order.canteen_id == canteen.id,
-#         models.Order.status != "delivered"
-#     ).all()
 
 @router.get("/vendor", response_model=list[OrderOut])
 def vendor_orders(

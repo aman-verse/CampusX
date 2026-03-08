@@ -37,11 +37,24 @@ class CanteenOut(BaseModel):
     id: int
     name: str
 
+class UserMini(BaseModel):
+    id: int
+    name: str
+    email: str
+
+    class Config:
+        orm_mode = True
 class OrderOut(BaseModel):
     id: int
+    token: int
     status: str
     total_amount: float
     created_at: datetime
+
+    phone: str
+    address: str
+
+    user: UserMini
     canteen: CanteenOut
     items: List[OrderItemOut]
 

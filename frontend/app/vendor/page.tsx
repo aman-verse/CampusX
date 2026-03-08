@@ -43,19 +43,8 @@ export default function VendorPage() {
   //////////////////////////////////////////////////
 
   useEffect(() => {
-    audio.current = new Audio("./notification.mp3")
+    audio.current = new Audio("/notification.mp3")
   }, [])
-
-  //////////////////////////////////////////////////
-  // MENU ITEM NAME
-
-  const getItemName = (id: number) => {
-
-    const item = menuItems.find(i => i.id === id)
-
-    return item?.name || `Item #${id}`
-
-  }
 
   //////////////////////////////////////////////////
   // FETCH ORDERS
@@ -141,11 +130,8 @@ export default function VendorPage() {
   }
 
   const deliverOrder = async (id: number) => {
-
     await api.markOrderDelivered(id)
-
     fetchOrders()
-
   }
 
   //////////////////////////////////////////////////
@@ -153,7 +139,6 @@ export default function VendorPage() {
   const handleLogout = () => {
 
     logout()
-
     router.push("/login")
 
   }
@@ -175,7 +160,7 @@ export default function VendorPage() {
   }
 
   //////////////////////////////////////////////////
-  // FILTERS
+  // FILTER ORDERS
 
   const newOrders = orders.filter(o => o.status === "placed")
   const processingOrders = orders.filter(o => o.status === "accepted")
@@ -183,13 +168,49 @@ export default function VendorPage() {
   const deliveredOrders = orders.filter(o => o.status === "delivered")
 
   //////////////////////////////////////////////////
+  // ORDER DETAILS COMPONENT
+
+  const OrderDetails = ({ order }: { order: any }) => (
+
+    <div className="space-y-1">
+
+      <p><b>Student:</b> {order.user?.name}</p>
+
+      <p><b>Email:</b> {order.user?.email}</p>
+
+      <p><b>Token:</b> {order.token}</p>
+
+      <p><b>Phone:</b> {order.phone}</p>
+
+      <p><b>Address:</b> {order.address}</p>
+
+      <div className="border-t pt-2 mt-2">
+
+        {order.items.map((item: any, i: number) => (
+
+          <p key={i}>
+            {item.menu_item?.name} × {item.quantity}
+          </p>
+
+        ))}
+
+      </div>
+
+      <p className="font-semibold mt-2">
+        Total: ₹{order.total_amount}
+      </p>
+
+    </div>
+
+  )
+
+  //////////////////////////////////////////////////
 
   return (
 
     <div className="min-h-screen bg-background relative">
 
-
-      {/* Background Image */}
+      {/* Background */}
 
       <div
         className="absolute inset-0 bg-cover bg-center opacity-10"
@@ -199,9 +220,7 @@ export default function VendorPage() {
         }}
       />
 
-
       <div className="relative z-10">
-
 
         {/* HEADER */}
 
@@ -230,13 +249,11 @@ export default function VendorPage() {
 
         </header>
 
-
         {/* MAIN */}
 
         <main className="max-w-6xl mx-auto px-4 py-8">
 
-
-          {/* VENDOR INFO */}
+          {/* Vendor Info */}
 
           <Card className="mb-6">
 
@@ -264,7 +281,6 @@ export default function VendorPage() {
 
           </Card>
 
-
           {/* TABS */}
 
           <Tabs defaultValue="new">
@@ -283,8 +299,7 @@ export default function VendorPage() {
 
             </TabsList>
 
-
-            {/* NEW */}
+            {/* NEW ORDERS */}
 
             <TabsContent value="new">
 
@@ -304,27 +319,7 @@ export default function VendorPage() {
 
                     <CardContent>
 
-                      <p>Token: {order.token}</p>
-
-                      <p>Phone: {order.phone}</p>
-
-                      <p>Address: {order.address}</p>
-
-                      <div className="border-t pt-2 mt-2">
-
-                        {order.items.map((item, i) => (
-
-                          <p key={i}>
-                            {getItemName(item.menu_item_id)} × {item.quantity}
-                          </p>
-
-                        ))}
-
-                      </div>
-
-                      <p className="font-semibold mt-2">
-                        Total: ₹{order.total_amount}
-                      </p>
+                      <OrderDetails order={order} />
 
                       <div className="flex gap-2 mt-3">
 
@@ -333,20 +328,16 @@ export default function VendorPage() {
                           variant="outline"
                           onClick={() => rejectOrder(order.id)}
                         >
-
                           <XCircle className="w-4 h-4 mr-1" />
                           Reject
-
                         </Button>
 
                         <Button
                           size="sm"
                           onClick={() => acceptOrder(order.id)}
                         >
-
                           <CheckCircle className="w-4 h-4 mr-1" />
                           Accept
-
                         </Button>
 
                       </div>
@@ -360,7 +351,6 @@ export default function VendorPage() {
               </div>
 
             </TabsContent>
-
 
             {/* PROCESSING */}
 
@@ -382,19 +372,15 @@ export default function VendorPage() {
 
                     <CardContent>
 
-                      <p>Phone: {order.phone}</p>
-
-                      <p>Address: {order.address}</p>
+                      <OrderDetails order={order} />
 
                       <Button
                         size="sm"
                         className="mt-3"
                         onClick={() => deliverOrder(order.id)}
                       >
-
                         <Truck className="w-4 h-4 mr-1" />
                         Delivered
-
                       </Button>
 
                     </CardContent>
@@ -406,7 +392,6 @@ export default function VendorPage() {
               </div>
 
             </TabsContent>
-
 
             {/* REJECTED */}
 
@@ -428,7 +413,7 @@ export default function VendorPage() {
 
                     <CardContent>
 
-                      <p>Order Rejected</p>
+                      <OrderDetails order={order} />
 
                     </CardContent>
 
@@ -439,7 +424,6 @@ export default function VendorPage() {
               </div>
 
             </TabsContent>
-
 
             {/* DELIVERED */}
 
@@ -461,7 +445,7 @@ export default function VendorPage() {
 
                     <CardContent>
 
-                      <p>Total ₹{order.total_amount}</p>
+                      <OrderDetails order={order} />
 
                     </CardContent>
 
@@ -472,7 +456,6 @@ export default function VendorPage() {
               </div>
 
             </TabsContent>
-
 
             {/* MENU */}
 

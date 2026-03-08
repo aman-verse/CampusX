@@ -12,8 +12,8 @@ def build_whatsapp_url(phone, order_id, token, student_name, student_phone, addr
         msg += f"{i['name']} × {i['qty']}  — ₹{i['price']}\n"
 
     msg += f"\nTotal: ₹{total}\n\n"
-    msg += f"Accept Order:\nhttps://campusx.com/vendor/orders/{order_id}/accept\n\n"
-    msg += f"Reject Order:\nhttps://campusx.com/vendor/orders/{order_id}/reject"
+    msg += f"Accept Order:\nhttps://campus-x-dun.vercel.app/vendor/orders/{order_id}/accept\n\n"
+    msg += f"Reject Order:\nhttps://campus-x-dun.vercel.app/vendor/orders/{order_id}/reject"
 
     encoded = urllib.parse.quote(msg)
 
