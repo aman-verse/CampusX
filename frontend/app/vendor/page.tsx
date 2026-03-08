@@ -43,7 +43,7 @@ export default function VendorPage() {
   //////////////////////////////////////////////////
 
   useEffect(() => {
-    audio.current = new Audio("/notification.mp3")
+    audio.current = new Audio("./notification.mp3")
   }, [])
 
   //////////////////////////////////////////////////
@@ -164,7 +164,7 @@ export default function VendorPage() {
 
     return (
 
-      <div className="flex justify-center items-center min-h-screen">
+      <div className="flex justify-center items-center min-h-screen bg-background">
 
         <Loader2 className="w-8 h-8 animate-spin" />
 
@@ -186,305 +186,327 @@ export default function VendorPage() {
 
   return (
 
-    <div className="container mx-auto p-6 max-w-4xl">
+    <div className="min-h-screen bg-background relative">
 
-      {/* HEADER */}
 
-      <div className="flex justify-between items-center mb-6">
+      {/* Background Image */}
 
-        <div className="flex items-center gap-2">
+      <div
+        className="absolute inset-0 bg-cover bg-center opacity-10"
+        style={{
+          backgroundImage:
+            "url('https://images.unsplash.com/photo-1504674900247-0877df9cc836')",
+        }}
+      />
 
-          <Utensils className="w-6 h-6" />
 
-          <h1 className="text-xl font-bold">
+      <div className="relative z-10">
 
-            Vendor Dashboard
 
-          </h1>
+        {/* HEADER */}
 
-        </div>
+        <header className="sticky top-0 bg-background border-b border-border">
 
-        <Button variant="ghost" onClick={handleLogout}>
-          <LogOut className="w-4 h-4" />
-        </Button>
+          <div className="max-w-6xl mx-auto h-16 flex justify-between items-center px-4">
 
-      </div>
+            <div className="flex items-center gap-2">
 
-      {/* VENDOR INFO */}
+              <Utensils className="w-6 h-6 text-primary" />
 
-      <Card className="mb-6">
+              <span className="font-semibold text-lg">
 
-        <CardHeader>
+                Campus Eats Vendor
 
-          <CardTitle>
-            {canteen?.name}
-          </CardTitle>
+              </span>
 
-          <CardDescription>
+            </div>
 
-            Vendor: {user?.name}
+            <Button variant="ghost" onClick={handleLogout}>
+              <LogOut className="w-4 h-4 mr-1" />
+              Logout
+            </Button>
 
-            <br />
+          </div>
 
-            Phone: {canteen?.vendor_phone}
+        </header>
 
-            <br />
 
-            Email: {canteen?.vendor_email}
+        {/* MAIN */}
 
-          </CardDescription>
+        <main className="max-w-6xl mx-auto px-4 py-8">
 
-        </CardHeader>
 
-      </Card>
+          {/* VENDOR INFO */}
 
-      {/* TABS */}
+          <Card className="mb-6">
 
-      <Tabs defaultValue="new">
+            <CardHeader>
 
-        <TabsList>
+              <CardTitle>
+                {canteen?.name}
+              </CardTitle>
 
-          <TabsTrigger value="new">New</TabsTrigger>
+              <CardDescription>
 
-          <TabsTrigger value="processing">Processing</TabsTrigger>
+                Vendor: {user?.name}
 
-          <TabsTrigger value="rejected">Rejected</TabsTrigger>
+                <br />
 
-          <TabsTrigger value="delivered">Delivered</TabsTrigger>
+                Phone: {canteen?.vendor_phone}
 
-          <TabsTrigger value="menu">Menu</TabsTrigger>
+                <br />
 
-        </TabsList>
+                Email: {canteen?.vendor_email}
 
-        {/* NEW */}
+              </CardDescription>
 
-        <TabsContent value="new">
+            </CardHeader>
 
-          <div className="space-y-4">
+          </Card>
 
-            {newOrders.map(order => (
 
-              <Card key={order.id}>
+          {/* TABS */}
 
-                <CardHeader>
+          <Tabs defaultValue="new">
 
-                  <CardTitle>
+            <TabsList className="mb-6">
 
-                    🍽 New Order #{order.id}
+              <TabsTrigger value="new">New</TabsTrigger>
 
-                  </CardTitle>
+              <TabsTrigger value="processing">Processing</TabsTrigger>
 
-                </CardHeader>
+              <TabsTrigger value="rejected">Rejected</TabsTrigger>
 
-                <CardContent>
+              <TabsTrigger value="delivered">Delivered</TabsTrigger>
 
-                  <p>Token: {order.token}</p>
+              <TabsTrigger value="menu">Menu</TabsTrigger>
 
-                  <p>Phone: {order.phone}</p>
+            </TabsList>
 
-                  <p>Address: {order.address}</p>
 
-                  <div className="border-t pt-2 mt-2">
+            {/* NEW */}
 
-                    {order.items.map((item, i) => (
+            <TabsContent value="new">
 
-                      <p key={i}>
+              <div className="space-y-4">
 
-                        {getItemName(item.menu_item_id)} × {item.quantity}
+                {newOrders.map(order => (
 
+                  <Card key={order.id}>
+
+                    <CardHeader>
+
+                      <CardTitle>
+                        🍽 New Order #{order.id}
+                      </CardTitle>
+
+                    </CardHeader>
+
+                    <CardContent>
+
+                      <p>Token: {order.token}</p>
+
+                      <p>Phone: {order.phone}</p>
+
+                      <p>Address: {order.address}</p>
+
+                      <div className="border-t pt-2 mt-2">
+
+                        {order.items.map((item, i) => (
+
+                          <p key={i}>
+                            {getItemName(item.menu_item_id)} × {item.quantity}
+                          </p>
+
+                        ))}
+
+                      </div>
+
+                      <p className="font-semibold mt-2">
+                        Total: ₹{order.total_amount}
                       </p>
 
-                    ))}
+                      <div className="flex gap-2 mt-3">
 
-                  </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => rejectOrder(order.id)}
+                        >
 
-                  <p className="font-semibold mt-2">
+                          <XCircle className="w-4 h-4 mr-1" />
+                          Reject
 
-                    Total: ₹{order.total_amount}
+                        </Button>
 
-                  </p>
+                        <Button
+                          size="sm"
+                          onClick={() => acceptOrder(order.id)}
+                        >
 
-                  <div className="flex gap-2 mt-3">
+                          <CheckCircle className="w-4 h-4 mr-1" />
+                          Accept
 
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => rejectOrder(order.id)}
-                    >
+                        </Button>
 
-                      <XCircle className="w-4 h-4 mr-1" />
-                      Reject
+                      </div>
 
-                    </Button>
+                    </CardContent>
 
-                    <Button
-                      size="sm"
-                      onClick={() => acceptOrder(order.id)}
-                    >
+                  </Card>
 
-                      <CheckCircle className="w-4 h-4 mr-1" />
-                      Accept
+                ))}
 
-                    </Button>
+              </div>
 
-                  </div>
+            </TabsContent>
 
-                </CardContent>
 
-              </Card>
+            {/* PROCESSING */}
 
-            ))}
+            <TabsContent value="processing">
 
-          </div>
+              <div className="space-y-4">
 
-        </TabsContent>
+                {processingOrders.map(order => (
 
-        {/* PROCESSING */}
+                  <Card key={order.id}>
 
-        <TabsContent value="processing">
+                    <CardHeader>
 
-          <div className="space-y-4">
+                      <CardTitle>
+                        🍳 Token #{order.token}
+                      </CardTitle>
 
-            {processingOrders.map(order => (
+                    </CardHeader>
 
-              <Card key={order.id}>
+                    <CardContent>
 
-                <CardHeader>
+                      <p>Phone: {order.phone}</p>
 
-                  <CardTitle>
+                      <p>Address: {order.address}</p>
 
-                    🍳 Token #{order.token}
+                      <Button
+                        size="sm"
+                        className="mt-3"
+                        onClick={() => deliverOrder(order.id)}
+                      >
 
-                  </CardTitle>
+                        <Truck className="w-4 h-4 mr-1" />
+                        Delivered
 
-                </CardHeader>
+                      </Button>
 
-                <CardContent>
+                    </CardContent>
 
-                  <p>Phone: {order.phone}</p>
+                  </Card>
 
-                  <p>Address: {order.address}</p>
+                ))}
 
-                  <Button
-                    size="sm"
-                    className="mt-3"
-                    onClick={() => deliverOrder(order.id)}
-                  >
+              </div>
 
-                    <Truck className="w-4 h-4 mr-1" />
-                    Delivered
+            </TabsContent>
 
-                  </Button>
 
-                </CardContent>
+            {/* REJECTED */}
 
-              </Card>
+            <TabsContent value="rejected">
 
-            ))}
+              <div className="space-y-4">
 
-          </div>
+                {rejectedOrders.map(order => (
 
-        </TabsContent>
+                  <Card key={order.id}>
 
-        {/* REJECTED */}
+                    <CardHeader>
 
-        <TabsContent value="rejected">
+                      <CardTitle>
+                        ❌ Token #{order.token}
+                      </CardTitle>
 
-          <div className="space-y-4">
+                    </CardHeader>
 
-            {rejectedOrders.map(order => (
+                    <CardContent>
 
-              <Card key={order.id}>
+                      <p>Order Rejected</p>
 
-                <CardHeader>
+                    </CardContent>
 
-                  <CardTitle>
+                  </Card>
 
-                    ❌ Token #{order.token}
+                ))}
 
-                  </CardTitle>
+              </div>
 
-                </CardHeader>
+            </TabsContent>
 
-                <CardContent>
 
-                  <p>Order Rejected</p>
+            {/* DELIVERED */}
 
-                </CardContent>
+            <TabsContent value="delivered">
 
-              </Card>
+              <div className="space-y-4">
 
-            ))}
+                {deliveredOrders.map(order => (
 
-          </div>
+                  <Card key={order.id}>
 
-        </TabsContent>
+                    <CardHeader>
 
-        {/* DELIVERED */}
+                      <CardTitle>
+                        ✅ Token #{order.token}
+                      </CardTitle>
 
-        <TabsContent value="delivered">
+                    </CardHeader>
 
-          <div className="space-y-4">
+                    <CardContent>
 
-            {deliveredOrders.map(order => (
+                      <p>Total ₹{order.total_amount}</p>
 
-              <Card key={order.id}>
+                    </CardContent>
 
-                <CardHeader>
+                  </Card>
 
-                  <CardTitle>
+                ))}
 
-                    ✅ Token #{order.token}
+              </div>
 
-                  </CardTitle>
+            </TabsContent>
 
-                </CardHeader>
 
-                <CardContent>
+            {/* MENU */}
 
-                  <p>Total ₹{order.total_amount}</p>
+            <TabsContent value="menu">
 
-                </CardContent>
+              <div className="grid gap-4">
 
-              </Card>
+                {menuItems.map(item => (
 
-            ))}
+                  <Card key={item.id}>
 
-          </div>
+                    <CardHeader>
 
-        </TabsContent>
+                      <CardTitle>
+                        {item.name}
+                      </CardTitle>
 
-        {/* MENU */}
+                      <p>₹{item.price}</p>
 
-        <TabsContent value="menu">
+                    </CardHeader>
 
-          <div className="grid gap-4">
+                  </Card>
 
-            {menuItems.map(item => (
+                ))}
 
-              <Card key={item.id}>
+              </div>
 
-                <CardHeader>
+            </TabsContent>
 
-                  <CardTitle>
+          </Tabs>
 
-                    {item.name}
+        </main>
 
-                  </CardTitle>
-
-                  <p>₹{item.price}</p>
-
-                </CardHeader>
-
-              </Card>
-
-            ))}
-
-          </div>
-
-        </TabsContent>
-
-      </Tabs>
+      </div>
 
     </div>
 

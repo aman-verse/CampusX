@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
 import { useCart } from "@/lib/cart-context"
@@ -48,11 +48,8 @@ import { useToast } from "@/hooks/use-toast"
 export default function StudentPage() {
 
   const router = useRouter()
-
   const { user, isAuthenticated, isLoading: authLoading, logout } = useAuth()
-
   const { addItem, clearCart, getItemCount } = useCart()
-
   const { toast } = useToast()
 
   const [canteens, setCanteens] = useState<Canteen[]>([])
@@ -61,6 +58,8 @@ export default function StudentPage() {
 
   const [isLoadingCanteens, setIsLoadingCanteens] = useState(false)
   const [isLoadingMenu, setIsLoadingMenu] = useState(false)
+
+  const menuRef = useRef<HTMLDivElement | null>(null)
 
   const collegeId =
     typeof window !== "undefined"
@@ -201,7 +200,6 @@ export default function StudentPage() {
                 )}
               </Button>
 
-
               <DropdownMenu>
 
                 <DropdownMenuTrigger asChild>
@@ -215,7 +213,6 @@ export default function StudentPage() {
                   </Avatar>
 
                 </DropdownMenuTrigger>
-
 
                 <DropdownMenuContent align="end" className="w-56">
 
@@ -276,7 +273,7 @@ export default function StudentPage() {
         </header>
 
 
-        <section className="container py-12 text-center">
+        <section className="container mx-auto py-12 text-center">
 
           <h1 className="text-4xl font-bold">
             Campus <span className="text-primary">Food Stalls</span>
@@ -286,14 +283,18 @@ export default function StudentPage() {
             Browse food vendors across your campus and order your favorite meals.
           </p>
 
-          <div className="mt-6 max-w-xl mx-auto relative">
+          <div className="mt-6 flex justify-center">
 
-            <Search className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
+            <div className="relative w-full max-w-xl">
 
-            <input
-              className="w-full pl-10 pr-4 py-3 rounded-full border border-border bg-background"
-              placeholder="Search stalls..."
-            />
+              <Search className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
+
+              <input
+                className="w-full pl-10 pr-4 py-3 rounded-full border border-border bg-background"
+                placeholder="Search stalls..."
+              />
+
+            </div>
 
           </div>
 
@@ -306,20 +307,29 @@ export default function StudentPage() {
             <Loader2 className="animate-spin" />
           ) : (
 
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 justify-center">
 
               {canteens.map((c) => (
 
                 <Card
                   key={c.id}
                   className="cursor-pointer hover:shadow-xl transition"
-                  onClick={() => setSelectedCanteenId(c.id)}
+                  onClick={() => {
+                    setSelectedCanteenId(c.id)
+
+                    setTimeout(() => {
+                      menuRef.current?.scrollIntoView({
+                        behavior: "smooth",
+                        block: "start",
+                      })
+                    }, 200)
+                  }}
                 >
 
-                  <img
+                  {/* <img
                     src="https://images.unsplash.com/photo-1550547660-d9450f859349"
                     className="w-full h-40 object-cover rounded-t-lg"
-                  />
+                  /> */}
 
                   <CardHeader>
 
@@ -332,10 +342,10 @@ export default function StudentPage() {
 
                     </CardTitle>
 
-                    <CardDescription className="flex items-center gap-1">
+                    {/* <CardDescription className="flex items-center gap-1">
                       <Star className="w-4 h-4 text-yellow-400" />
                       4.5 Rating
-                    </CardDescription>
+                    </CardDescription> */}
 
                   </CardHeader>
 
@@ -361,7 +371,7 @@ export default function StudentPage() {
 
           {selectedCanteenId && (
 
-            <div className="mt-10 mx-auto px-4">
+            <div ref={menuRef} className="mt-10 mx-auto px-4">
 
               <h2 className="text-2xl font-bold mb-4">
                 Menu
@@ -377,10 +387,10 @@ export default function StudentPage() {
 
                     <Card key={item.id}>
 
-                      <img
+                      {/* <img
                         src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c"
                         className="w-full h-32 object-cover rounded-t-lg"
-                      />
+                      /> */}
 
                       <CardContent className="p-4 flex justify-between">
 
@@ -419,6 +429,24 @@ export default function StudentPage() {
           )}
 
         </main>
+
+
+        {getItemCount() > 0 && (
+
+          <Button
+            onClick={() => router.push("/cart")}
+            className="fixed bottom-6 right-6 z-50 shadow-xl rounded-full h-14 w-14 flex items-center justify-center"
+          >
+
+            <ShoppingCart className="w-5 h-5" />
+
+            <Badge className="absolute -top-2 -right-2">
+              {getItemCount()}
+            </Badge>
+
+          </Button>
+
+        )}
 
 
         <footer className="border-t border-border py-10 mt-10">

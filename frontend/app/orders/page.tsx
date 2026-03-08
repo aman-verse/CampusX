@@ -150,7 +150,7 @@ function OrdersContent() {
 
         <Header />
 
-        <main className="container py-10">
+        <main className="container mx-auto py-10">
 
           <div className="max-w-2xl mx-auto space-y-6">
 
