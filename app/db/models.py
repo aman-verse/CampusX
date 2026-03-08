@@ -78,5 +78,5 @@ class OrderItem(Base):
 
     order_id = Column(Integer, ForeignKey("orders.id"))
     menu_item_id = Column(Integer, ForeignKey("menu_items.id"))
-
     order = relationship("Order", back_populates="items")
+    menu_item = relationship("MenuItem")

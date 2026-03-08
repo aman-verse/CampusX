@@ -20,12 +20,7 @@ def root():
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://campus-x-eight.vercel.app/",
-        "http://localhost:3000",
-        "http://localhost:5173",
-        "https://campusx-43j7.onrender.com"
-    ],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

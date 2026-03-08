@@ -7,7 +7,7 @@ import { ProtectedRoute } from "@/components/protected-route"
 import { Header } from "@/components/header"
 
 import { api } from "@/lib/api"
-import type { Order } from "@/lib/types"
+import type { Order, MenuItem } from "@/lib/types"
 
 import {
   Card,
@@ -26,35 +26,89 @@ function OrderDetailContent() {
 
   const params = useParams()
   const router = useRouter()
-
-  const orderId = params.id as string
+  const orderId = Number(params.id)
 
   const [order, setOrder] = useState<Order | null>(null)
+  const [menu, setMenu] = useState<MenuItem[]>([])
+  const [loading, setLoading] = useState(true)
+
+  //////////////////////////////////////////////////
+  // FETCH ORDER
+  //////////////////////////////////////////////////
 
   useEffect(() => {
 
     const fetchOrder = async () => {
 
-      const data = await api.getMyOrders()
-      const order = data.find((o) => String(o.id) === orderId)
-      setOrder(order || null)
+      try {
+
+        const orders = await api.getMyOrders()
+
+        const foundOrder = orders.find(
+          (o) => o.id === orderId
+        )
+
+        if (foundOrder) {
+
+          setOrder(foundOrder)
+
+          const menuItems = await api.getMenuByCanteen(
+            foundOrder.canteen.id
+          )
+
+          setMenu(menuItems)
+
+        } else {
+
+          setOrder(null)
+
+        }
+
+      } catch (error) {
+
+        console.error("Failed to load order:", error)
+
+      } finally {
+
+        setLoading(false)
+
+      }
 
     }
 
-    fetchOrder()
+    if (orderId) {
+      fetchOrder()
+    }
 
   }, [orderId])
 
+  //////////////////////////////////////////////////
+  // LOADING
+  //////////////////////////////////////////////////
 
-  if (!order) {
-
+  if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        Loading...
+      <div className="min-h-screen flex items-center justify-center">
+        Loading order...
       </div>
     )
-
   }
+
+  //////////////////////////////////////////////////
+  // NOT FOUND
+  //////////////////////////////////////////////////
+
+  if (!order) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        Order not found
+      </div>
+    )
+  }
+
+  //////////////////////////////////////////////////
+  // UI
+  //////////////////////////////////////////////////
 
   return (
 
@@ -75,10 +129,10 @@ function OrderDetailContent() {
 
         <Card>
 
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
 
             <CardTitle>
-              Order #{String(order.id).slice(0, 6)}
+              Order #{order.token}
             </CardTitle>
 
             <Badge>
@@ -89,24 +143,32 @@ function OrderDetailContent() {
 
           <CardContent className="space-y-4">
 
-            {order.items.map((item, index) => (
+            {order.items.map((item, index) => {
 
-              <div
-                key={index}
-                className="flex justify-between"
-              >
+              const menuItem = menu.find(
+                (mi) => mi.id === item.menu_item_id
+              )
 
-                <p>
-                  {item.quantity}x {item.item_name}
-                </p>
+              return (
 
-                <p>
-                  ₹{(item.price * item.quantity).toFixed(2)}
-                </p>
+                <div
+                  key={index}
+                  className="flex justify-between"
+                >
 
-              </div>
+                  <p>
+                    {item.quantity} × {menuItem?.name || "Item"}
+                  </p>
 
-            ))}
+                  <p>
+                    ₹{(menuItem?.price || 0) * item.quantity}
+                  </p>
+
+                </div>
+
+              )
+
+            })}
 
             <Separator />
 
@@ -115,7 +177,7 @@ function OrderDetailContent() {
               <span>Total</span>
 
               <span>
-                ₹{order.total_amount.toFixed(2)}
+                ₹{order.total_amount}
               </span>
 
             </div>

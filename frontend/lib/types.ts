@@ -91,12 +91,16 @@ export interface Order {
   status: OrderStatus
   created_at: string
   user_id: number
-  canteen_id: number
+  canteen: {
+    id: number
+    name: string
+  }
   phone: string
   address: string
   total_amount: number
   items: OrderItem[]
 }
+
 
 export interface CreateOrderPayload {
   canteen_id: number

@@ -17,9 +17,19 @@ class OrderResponse(BaseModel):
     order_id: int
     status: str
 
+class MenuItemMini(BaseModel):
+    id: int
+    name: str
+    price: int
+
+    class Config:
+        orm_mode = True
+
+
 class OrderItemOut(BaseModel):
-    menu_item_id: int
     quantity: int
+    menu_item: MenuItemMini
+
     class Config:
         orm_mode = True
 

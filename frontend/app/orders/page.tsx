@@ -56,11 +56,8 @@ function OrdersContent() {
   const [tab, setTab] = useState<"active" | "past">("active")
 
   useEffect(() => {
-
     const fetchOrders = async () => {
-
       try {
-
         const data = await api.getMyOrders()
         setOrders(data)
 
@@ -71,7 +68,6 @@ function OrdersContent() {
       }
 
     }
-
     fetchOrders()
 
   }, [])
@@ -93,25 +89,16 @@ function OrdersContent() {
     })
 
   const OrderCard = ({ order }: { order: Order }) => {
-
     const status = statusMap[order.status]
-
     return (
-
       <Link href={`/orders/${order.id}`}>
-
         <Card className="hover:shadow-xl transition cursor-pointer">
-
           <CardHeader className="pb-2">
-
             <div className="flex justify-between">
-
               <div>
-
                 <CardTitle className="text-base">
                   Order #{String(order.id).slice(0, 6)}
                 </CardTitle>
-
                 <CardDescription>
                   {formatDate(order.created_at)}
                 </CardDescription>
