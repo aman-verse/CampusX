@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { ProtectedRoute } from '@/components/protected-route';
 import { Header } from '@/components/header';
 import { api } from '@/lib/api';
-import type{ Vendor } from '@/lib/types';
+import type { Vendor } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -22,8 +22,7 @@ function DashboardContent() {
   useEffect(() => {
     async function fetchVendors() {
       try {
-        const data = await api.getMyOrders()
-;
+        const data = await api.getVendors();
         setVendors(data);
         setFilteredVendors(data);
       } catch (error) {

@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, ReactNode, JSX } from "react"
+import { useEffect, useState, JSX } from "react"
 import Link from "next/link"
 
 import { ProtectedRoute } from "@/components/protected-route"
@@ -107,6 +107,7 @@ function OrdersContent() {
             <div className="flex justify-between">
 
               <div>
+
                 <CardTitle className="text-base">
                   Order #{String(order.id).slice(0, 6)}
                 </CardTitle>
@@ -114,6 +115,7 @@ function OrdersContent() {
                 <CardDescription>
                   {formatDate(order.created_at)}
                 </CardDescription>
+
               </div>
 
               <Badge variant={status.variant} className="flex gap-1 items-center">
@@ -126,9 +128,11 @@ function OrdersContent() {
           </CardHeader>
 
           <CardContent>
+
             <p className="text-sm text-muted-foreground">
               Items: {order.items.length}
             </p>
+
           </CardContent>
 
         </Card>
@@ -141,77 +145,100 @@ function OrdersContent() {
 
   return (
 
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen m bg-background relative">
 
-      <Header />
 
-      <main className="container py-10 space-y-6">
+      {/* Background Image */}
 
-        <div className="text-center mb-8">
+      <div
+        className="absolute inset-0 bg-cover bg-center opacity-10"
+        style={{
+          backgroundImage:
+            "url('https://images.unsplash.com/photo-1504674900247-0877df9cc836')",
+        }}
+      />
 
-          <h1 className="text-3xl font-bold">
-            My Orders
-          </h1>
 
-          <p className="text-muted-foreground">
-            Track your campus food orders
-          </p>
+      <div className="relative z-10">
 
-        </div>
+        <Header />
 
-        <Tabs value={tab} onValueChange={(v) => setTab(v as any)}>
+        <main className="container py-10">
 
-          <TabsList className="mx-auto">
+          <div className="max-w-2xl mx-auto space-y-6">
 
-            <TabsTrigger value="active">
-              Active ({activeOrders.length})
-            </TabsTrigger>
+          <div className="text-center mb-8">
 
-            <TabsTrigger value="past">
-              Past ({pastOrders.length})
-            </TabsTrigger>
+            <h1 className="text-3xl font-bold">
+              My Orders
+            </h1>
 
-          </TabsList>
+            <p className="text-muted-foreground">
+              Track your campus food orders
+            </p>
 
-          <TabsContent value="active" className="mt-6">
+          </div>
 
-            {loading ? (
-              <Skeleton className="h-32 w-full" />
-            ) : activeOrders.length === 0 ? (
-              <p>No active orders</p>
-            ) : (
+          <Tabs value={tab} onValueChange={(v) => setTab(v as any)}>
 
-              <div className="space-y-4">
-                {activeOrders.map(o => (
-                  <OrderCard key={o.id} order={o} />
-                ))}
-              </div>
+            <TabsList className="max-w-2xl mx-auto">
 
-            )}
+              <TabsTrigger value="active">
+                Active ({activeOrders.length})
+              </TabsTrigger>
 
-          </TabsContent>
+              <TabsTrigger value="past">
+                Past ({pastOrders.length})
+              </TabsTrigger>
 
-          <TabsContent value="past" className="mt-6">
+            </TabsList>
 
-            {loading ? (
-              <Skeleton className="h-32 w-full" />
-            ) : pastOrders.length === 0 ? (
-              <p>No past orders</p>
-            ) : (
+            <TabsContent value="active" className="mt-6">
 
-              <div className="space-y-4">
-                {pastOrders.map(o => (
-                  <OrderCard key={o.id} order={o} />
-                ))}
-              </div>
+              {loading ? (
+                <Skeleton className="h-32 w-full" />
+              ) : activeOrders.length === 0 ? (
+                <p className="text-center text-muted-foreground">
+                  No active orders
+                </p>
+              ) : (
 
-            )}
+                <div className="mx-auto space-y-4">
+                  {activeOrders.map(o => (
+                    <OrderCard key={o.id} order={o} />
+                  ))}
+                </div>
 
-          </TabsContent>
+              )}
 
-        </Tabs>
+            </TabsContent>
 
-      </main>
+            <TabsContent value="past" className="mt-6">
+
+              {loading ? (
+                <Skeleton className="h-32 w-full" />
+              ) : pastOrders.length === 0 ? (
+                <p className="text-center text-muted-foreground">
+                  No past orders
+                </p>
+              ) : (
+
+                <div className="space-y-4">
+                  {pastOrders.map(o => (
+                    <OrderCard key={o.id} order={o} />
+                  ))}
+                </div>
+
+              )}
+
+            </TabsContent>
+
+          </Tabs>
+          </div>
+
+        </main>
+
+      </div>
 
     </div>
 
