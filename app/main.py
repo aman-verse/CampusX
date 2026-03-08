@@ -21,6 +21,7 @@ def root():
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
+        "https://campus-x-git-main-aman-singhs-projects-083b2ed2.vercel.app/",
         "http://localhost:3000",
         "http://localhost:5173",
         "https://campusx-43j7.onrender.com"
