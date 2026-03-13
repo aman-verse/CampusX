@@ -18,6 +18,10 @@ db.close()
 def root():
     return {"message": "Campus Food Delivery API running"}
 
+@app.get("/health")
+def health_check():
+    return {"status": "server running"}
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
