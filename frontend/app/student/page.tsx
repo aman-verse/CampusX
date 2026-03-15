@@ -24,7 +24,8 @@ import {
   Search,
   LayoutDashboard,
   User,
-  LogOut
+  LogOut,
+  Star
 } from "lucide-react"
 
 import {
@@ -65,6 +66,7 @@ export default function StudentPage() {
       ? Number(localStorage.getItem("selected_college_id"))
       : null
 
+  //////////////////////////////////////////////////
 
   useEffect(() => {
 
@@ -74,6 +76,7 @@ export default function StudentPage() {
 
   }, [authLoading, isAuthenticated, user, router])
 
+  //////////////////////////////////////////////////
 
   useEffect(() => {
 
@@ -86,6 +89,7 @@ export default function StudentPage() {
       try {
 
         const data = await api.getCanteensByCollege(collegeId)
+
         setCanteens(data)
 
       } catch {
@@ -106,6 +110,48 @@ export default function StudentPage() {
 
   }, [collegeId, toast])
 
+  //////////////////////////////////////////////////
+  // STATUS BADGE
+
+  const getStatusBadge = (status?: string) => {
+
+    if (status === "open") {
+      return <Badge className="bg-green-600 text-white">Open</Badge>
+    }
+
+    if (status === "busy") {
+      return <Badge className="bg-yellow-500 text-black">Busy</Badge>
+    }
+
+    if (status === "closed") {
+      return <Badge variant="destructive">Closed</Badge>
+    }
+
+    return <Badge>Open</Badge>
+
+  }
+
+  //////////////////////////////////////////////////
+  // OPEN CANTEEN
+
+  const openCanteen = (c: Canteen) => {
+
+    if (c.status === "closed") {
+
+      toast({
+        title: "Closed",
+        description: "This canteen is currently closed",
+        variant: "destructive"
+      })
+
+      return
+    }
+
+    router.push(`/canteen/${c.id}`)
+
+  }
+
+  //////////////////////////////////////////////////
 
   if (authLoading) {
 
@@ -117,6 +163,7 @@ export default function StudentPage() {
 
   }
 
+  //////////////////////////////////////////////////
 
   return (
 
@@ -126,7 +173,7 @@ export default function StudentPage() {
         className="absolute inset-0 bg-cover bg-center opacity-10"
         style={{
           backgroundImage:
-            "url('https://images.unsplash.com/photo-1504674900247-0877df9cc836')",
+            "url('https://images.unsplash.com/photo-1504674900247-0877df9cc836')"
         }}
       />
 
@@ -148,6 +195,7 @@ export default function StudentPage() {
               <Button
                 variant="outline"
                 size="sm"
+                className="cursor-pointer"
                 onClick={() => router.push("/orders")}
               >
                 Orders
@@ -156,12 +204,15 @@ export default function StudentPage() {
               <Button
                 variant="outline"
                 size="sm"
+                className="cursor-pointer"
                 onClick={() => router.push("/cart")}
               >
                 <ShoppingCart />
 
                 {getItemCount() > 0 && (
-                  <Badge className="ml-1">{getItemCount()}</Badge>
+                  <Badge className="ml-1">
+                    {getItemCount()}
+                  </Badge>
                 )}
 
               </Button>
@@ -184,13 +235,19 @@ export default function StudentPage() {
 
                   <div className="px-3 py-2">
 
-                    <p className="font-medium">
-                      {user?.name}
-                    </p>
+                    <p className="font-medium">{user?.name}</p>
 
                     <p className="text-xs text-muted-foreground">
                       {user?.email}
                     </p>
+
+                    {user?.phone && (
+
+                      <p className="text-xs text-muted-foreground">
+                        Phone: {user.phone}
+                      </p>
+
+                    )}
 
                     <Badge className="mt-1">
                       {user?.role}
@@ -201,6 +258,7 @@ export default function StudentPage() {
                   <DropdownMenuSeparator />
 
                   <DropdownMenuItem
+                    className="cursor-pointer"
                     onClick={() => router.push("/student")}
                   >
                     <LayoutDashboard className="w-4 h-4 mr-2" />
@@ -208,6 +266,7 @@ export default function StudentPage() {
                   </DropdownMenuItem>
 
                   <DropdownMenuItem
+                    className="cursor-pointer"
                     onClick={() => router.push("/orders")}
                   >
                     <User className="w-4 h-4 mr-2" />
@@ -217,7 +276,7 @@ export default function StudentPage() {
                   <DropdownMenuSeparator />
 
                   <DropdownMenuItem
-                    className="text-red-500"
+                    className="text-red-500 cursor-pointer"
                     onClick={() => {
                       logout()
                       clearCart()
@@ -237,7 +296,6 @@ export default function StudentPage() {
           </div>
 
         </header>
-
 
         {/* HERO */}
 
@@ -266,7 +324,6 @@ export default function StudentPage() {
 
         </section>
 
-
         {/* CANTEENS */}
 
         <main className="container mx-auto pb-16">
@@ -280,36 +337,48 @@ export default function StudentPage() {
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
 
               {canteens
-                .filter(c =>
-                  c.name.toLowerCase().includes(search.toLowerCase())
-                )
+                .filter(c => c.name.toLowerCase().includes(search.toLowerCase()))
                 .map((c) => (
 
                   <Card
                     key={c.id}
-                    className="cursor-pointer hover:shadow-xl"
-                    onClick={() => router.push(`/canteen/${c.id}`)}
+                    className={`cursor-pointer hover:shadow-xl ${c.status === "closed" ? "opacity-60" : ""}`}
+                    onClick={() => openCanteen(c)}
                   >
+
+                    {c.image_url && (
+
+                      <img
+                        src={c.image_url}
+                        className="h-40 w-full object-cover rounded-t"
+                        alt={c.name}
+                      />
+
+                    )}
 
                     <CardHeader>
 
-                      <CardTitle className="flex justify-between">
+                      <CardTitle className="flex justify-between items-center">
 
                         {c.name}
 
-                        <Badge>Open</Badge>
+                        {getStatusBadge(c.status)}
 
                       </CardTitle>
 
                     </CardHeader>
 
-                    <CardContent className="flex justify-between">
+                    <CardContent className="flex justify-between items-center">
 
-                      <Badge variant="secondary">
-                        Campus Vendor
-                      </Badge>
+                      <div className="flex items-center gap-1">
 
-                      <Button size="sm">
+                        <Star className="w-4 h-4 text-yellow-500" />
+
+                        <span>{c.rating ?? "New"}</span>
+
+                      </div>
+
+                      <Button size="sm" className="cursor-pointer">
                         View Menu
                       </Button>
 
@@ -325,8 +394,7 @@ export default function StudentPage() {
 
         </main>
 
-
-        {/* FLOATING CART BUTTON */}
+        {/* FLOATING CART */}
 
         {getItemCount() > 0 && (
 
@@ -344,7 +412,6 @@ export default function StudentPage() {
           </Button>
 
         )}
-
 
         {/* FOOTER */}
 

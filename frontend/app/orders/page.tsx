@@ -97,6 +97,8 @@ function OrdersContent() {
 
   const [range, setRange] = useState("week")
 
+  const [autoSwitch, setAutoSwitch] = useState(true)
+
   //////////////////////////////////////////////////
   // INSTANT CACHE LOAD
 
@@ -106,13 +108,28 @@ function OrdersContent() {
 
     if (cached) {
 
-      setOrders(JSON.parse(cached))
+      const data = JSON.parse(cached)
+
+      let filtered = data
+
+      if (range === "week") {
+
+        const weekAgo = new Date()
+        weekAgo.setDate(weekAgo.getDate() - 7)
+
+        filtered = data.filter(
+          (o: Order) => new Date(o.created_at) > weekAgo
+        )
+
+      }
+
+      setOrders(filtered)
 
     }
 
     fetchOrders()
 
-  }, [])
+  }, [range])
 
   //////////////////////////////////////////////////
 
@@ -168,6 +185,33 @@ function OrdersContent() {
   const deliveredOrders = orders.filter(o => o.status === "delivered")
 
   //////////////////////////////////////////////////
+  // AUTO TAB SWITCH (only if user hasn't clicked manually)
+
+  useEffect(() => {
+
+    if (!autoSwitch) return
+
+    if (placedOrders.length > 0) {
+
+      setTab("placed")
+
+    } else if (acceptedOrders.length > 0) {
+
+      setTab("accepted")
+
+    } else if (rejectedOrders.length > 0) {
+
+      setTab("rejected")
+
+    } else {
+
+      setTab("delivered")
+
+    }
+
+  }, [orders, autoSwitch])
+
+  //////////////////////////////////////////////////
 
   const formatDate = (d: string) => {
 
@@ -191,8 +235,10 @@ function OrdersContent() {
 
     return (
 
-      <Card className="hover:shadow-xl transition cursor-pointer
-bg-white/0 backdrop-blur-md border border-white/30">
+      <Card
+        className="hover:shadow-xl hover:scale-[1.01] transition-all duration-200 cursor-pointer
+bg-white/70 dark:bg-zinc-900/70 backdrop-blur-md border border-white/20"
+      >
 
         <CardHeader className="pb-2">
 
@@ -420,26 +466,30 @@ cursor-pointer"
 
           <div className="max-w-xl mx-auto space-y-8">
 
-            <Tabs value={tab}
-              onValueChange={(v) => setTab(v as any)}
+            <Tabs
+              value={tab}
+              onValueChange={(v) => {
+                setAutoSwitch(false)
+                setTab(v as any)
+              }}
               className="cursor-pointer"
             >
 
               <TabsList className="max-w-xl mx-auto">
 
-                <TabsTrigger value="placed">
+                <TabsTrigger value="placed" className="cursor-pointer">
                   Waiting ({placedOrders.length})
                 </TabsTrigger>
 
-                <TabsTrigger value="accepted">
+                <TabsTrigger value="accepted" className="cursor-pointer">
                   Preparing ({acceptedOrders.length})
                 </TabsTrigger>
 
-                <TabsTrigger value="rejected">
+                <TabsTrigger value="rejected" className="cursor-pointer">
                   Rejected ({rejectedOrders.length})
                 </TabsTrigger>
 
-                <TabsTrigger value="delivered">
+                <TabsTrigger value="delivered" className="cursor-pointer">
                   Delivered ({deliveredOrders.length})
                 </TabsTrigger>
 

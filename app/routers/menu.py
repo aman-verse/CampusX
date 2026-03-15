@@ -4,8 +4,8 @@ from app.db import models
 from app.utils.helpers import require_roles
 from app.db.database import SessionLocal
 from app.db.models import MenuItem
-from app.schemas.menu import MenuItemOut
-
+from app.schemas.menu import MenuItemOut,MenuItemCreate
+from app.services.menu_service import create_menu_item
 router = APIRouter(prefix="/menu", tags=["Menu"])
 
 
@@ -41,3 +41,19 @@ def delete_menu_item(
     db.commit()
 
     return {"message": "Menu item deleted"}
+
+@router.post("/")
+def add_menu_item(
+    data: MenuItemCreate,
+    db: Session = Depends(get_db),
+    user=Depends(require_roles(["vendor"]))
+):
+
+    item = create_menu_item(
+        db,
+        name=data.name,
+        price=data.price,
+        canteen_id=data.canteen_id
+    )
+
+    return item

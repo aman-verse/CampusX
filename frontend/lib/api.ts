@@ -290,13 +290,24 @@ class ApiClient {
 
   async updateCanteenStatus(status: string) {
 
-    return this.request("/canteens/vendor/status", {
-      method: "PATCH",
-      body: JSON.stringify({ status })
+    return this.request(`/canteens/vendor/status?status=${status}`, {
+      method: "PATCH"
     })
 
   }
 
+  async createMenuItem(data: {
+    name: string
+    price: number
+    canteen_id: number
+  }) {
+
+    return this.request("/menu", {
+      method: "POST",
+      body: JSON.stringify(data)
+    })
+
+  }
   //////////////////////////////////////////////////
   // SUPERADMIN
   //////////////////////////////////////////////////
