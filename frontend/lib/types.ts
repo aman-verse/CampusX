@@ -12,9 +12,7 @@ export interface User {
   name: string
   email: string
   role: UserRole
-  created_at: string
-  picture?: string
-  external_email_allowed?: boolean
+  phone?: string
 }
 
 export interface AuthResponse {
@@ -57,6 +55,9 @@ export interface Canteen {
   college_id: number
   vendor_email: string
   vendor_phone: string
+  image_url?: string
+  rating?: number
+  status?: "open" | "closed" | "busy"
 }
 
 //////////////////////////////////////////////////
@@ -68,6 +69,7 @@ export interface MenuItem {
   name: string
   price: number
   canteen_id: number
+  image_url?: string
 }
 
 //////////////////////////////////////////////////

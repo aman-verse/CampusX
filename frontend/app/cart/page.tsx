@@ -2,21 +2,28 @@
 
 import { useRouter } from "next/navigation"
 import { useCart } from "@/lib/cart-context"
+import { useAuth } from "@/lib/auth-context"
 import { api } from "@/lib/api"
-import { useState } from "react"
+import { useState, useEffect } from "react"
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
+import { Badge } from "@/components/ui/badge"
 
-import { Minus, Plus, Trash2, Utensils } from "lucide-react"
+import {
+  Minus,
+  Plus,
+  Trash2,
+  Utensils,
+  ShoppingCart
+} from "lucide-react"
 
 export default function CartPage() {
 
   const router = useRouter()
 
-  const [phone, setPhone] = useState("")
-  const [address, setAddress] = useState("")
-  const [placingOrder, setPlacingOrder] = useState(false)
+  const { user } = useAuth()
 
   const {
     items,
@@ -27,6 +34,42 @@ export default function CartPage() {
     getTotal
   } = useCart()
 
+  const [phone, setPhone] = useState("")
+  const [address, setAddress] = useState("")
+  const [canteenName, setCanteenName] = useState("")
+  const [placingOrder, setPlacingOrder] = useState(false)
+
+  // autofill phone from dashboard
+  useEffect(() => {
+    if (user?.phone) {
+      setPhone(user.phone)
+    }
+  }, [user])
+
+  // fetch canteen name
+  useEffect(() => {
+
+    if (!canteenId) return
+
+    const loadCanteen = async () => {
+
+      try {
+
+        const list = await api.getAllCanteens()
+
+        const c = list.find(x => x.id === canteenId)
+
+        if (c) setCanteenName(c.name)
+
+      } catch (err) {
+        console.error(err)
+      }
+
+    }
+
+    loadCanteen()
+
+  }, [canteenId])
 
   const placeOrder = async () => {
 
@@ -55,9 +98,9 @@ export default function CartPage() {
 
       })
 
-      if (res?.whatsapp_url) {
-        window.open(res.whatsapp_url)
-      }
+      // if (res?.whatsapp_url) {
+      //   window.open(res.whatsapp_url)
+      // }
 
       clearCart()
 
@@ -107,9 +150,6 @@ export default function CartPage() {
 
     <div className="min-h-screen bg-background relative">
 
-
-      {/* Background Food Image */}
-
       <div
         className="absolute inset-0 bg-cover bg-center opacity-10"
         style={{
@@ -118,11 +158,10 @@ export default function CartPage() {
         }}
       />
 
-
       <div className="relative z-10">
 
 
-        {/* HEADER */}
+        {/* HEADER (same style as student page) */}
 
         <header className="sticky top-0 bg-background border-b border-border">
 
@@ -141,7 +180,15 @@ export default function CartPage() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => router.push("/student")}
+              onClick={() => {
+
+                if (canteenId) {
+                  router.push(`/canteen/${canteenId}`)
+                } else {
+                  router.push("/student")
+                }
+
+              }}
             >
               Back to Menu
             </Button>
@@ -163,6 +210,14 @@ export default function CartPage() {
                 My Cart
               </CardTitle>
 
+              {canteenName && (
+
+                <p className="text-sm text-muted-foreground mt-1">
+                  From {canteenName}
+                </p>
+
+              )}
+
             </CardHeader>
 
             <CardContent className="space-y-4">
@@ -181,9 +236,15 @@ export default function CartPage() {
                       {item.name}
                     </p>
 
-                    <p className="text-sm text-muted-foreground">
-                      ₹{item.price} × {item.quantity}
-                    </p>
+                    <div className="text-sm text-muted-foreground flex gap-2">
+                      <span>₹{item.price}</span>
+                      <span>×</span>
+                      <span>{item.quantity}</span>
+                      <span>=</span>
+                      <span className="font-medium text-foreground">
+                        ₹{item.price * item.quantity}
+                      </span>
+                    </div>
 
                   </div>
 
@@ -208,11 +269,9 @@ export default function CartPage() {
                       <Minus size={16} />
                     </Button>
 
-
                     <span>
                       {item.quantity}
                     </span>
-
 
                     <Button
                       size="icon"
@@ -225,7 +284,6 @@ export default function CartPage() {
                     >
                       <Plus size={16} />
                     </Button>
-
 
                     <Button
                       size="icon"
@@ -260,10 +318,9 @@ export default function CartPage() {
               </div>
 
 
-              {/* Phone */}
+              {/* PHONE */}
 
               <div className="space-y-4 mt-6">
-
 
                 <div>
 
@@ -317,59 +374,40 @@ export default function CartPage() {
         </div>
 
 
-        {/* FOOTER */}
+        {/* FOOTER (same as student page) */}
 
         <footer className="border-t border-border py-10 mt-10">
 
           <div className="container mx-auto px-4 grid md:grid-cols-3 gap-6 text-sm">
 
             <div>
-
-              <h3 className="font-semibold text-lg">
-                Campus Eats
-              </h3>
-
+              <h3 className="font-semibold text-lg">Campus Eats</h3>
               <p className="text-muted-foreground mt-2">
                 Order food from campus vendors easily and quickly.
               </p>
-
             </div>
 
-
             <div>
-
-              <h3 className="font-semibold">
-                About
-              </h3>
-
+              <h3 className="font-semibold">About</h3>
               <p className="text-muted-foreground mt-2">
-                A campus food ordering platform designed for students to skip lines and order food easily.
+                A campus food ordering platform designed for students.
               </p>
-
             </div>
 
-
             <div>
-
-              <h3 className="font-semibold">
-                Contact
-              </h3>
-
+              <h3 className="font-semibold">Contact</h3>
               <p className="text-muted-foreground mt-2">
                 Founder: Aman Singh
               </p>
-
               <p className="text-muted-foreground">
                 Email: contact@campuseats.com
               </p>
-
             </div>
 
           </div>
 
-
           <div className="text-center text-muted-foreground mt-8 text-sm">
-            © {new Date().getFullYear()} Campus Eats. All rights reserved.
+            © {new Date().getFullYear()} Campus Eats
           </div>
 
         </footer>

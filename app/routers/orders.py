@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends
+from fastapi import Body
 from sqlalchemy.orm import Session,joinedload
 from app.schemas.order import OrderCreate, OrderOut
 from app.services.order_service import create_order, accept_order, deliver_order
@@ -29,7 +30,8 @@ def place_order(
         canteen_id=data.canteen_id,
         phone=data.phone,
         address=data.address,
-        items=[item.dict() for item in data.items]
+        items=[item.dict() for item in data.items],
+        student_note=data.student_note
     )
 
 @router.get("/my", response_model=list[OrderOut])
@@ -88,12 +90,22 @@ def vendor_accept_order(
 @router.patch("/vendor/{order_id}/reject")
 def reject_order(
     order_id: int,
+    reason: str | None = Body(default=None),
     db: Session = Depends(get_db),
     user=Depends(require_roles(["vendor"]))
 ):
+
     order = db.query(models.Order).get(order_id)
+
+    if not order:
+        return {"error": "order not found"}
+
     order.status = "rejected"
+    order.reject_reason = reason
+
     db.commit()
+    db.refresh(order)
+
     return order
 
 @router.get("/vendor/history", response_model=list[OrderOut])

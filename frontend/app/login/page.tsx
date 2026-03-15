@@ -63,6 +63,7 @@ export default function LoginPage() {
       try {
         const data = await api.getColleges()
         setColleges(data)
+
         if (data.length === 1) {
           setSelectedCollegeId(data[0].id)
         }
@@ -73,6 +74,7 @@ export default function LoginPage() {
         setIsLoadingColleges(false)
       }
     }
+
     fetchColleges()
   }, [])
 
@@ -88,6 +90,7 @@ export default function LoginPage() {
 
       try {
         const loggedInUser = await login(response.credential, selectedCollegeId)
+
         switch (loggedInUser.role) {
           case "vendor":
             router.push("/vendor")
@@ -101,7 +104,9 @@ export default function LoginPage() {
       } catch (error) {
         console.error("Login failed:", error)
         setLoginError(
-          error instanceof Error ? error.message : "Login failed. Please try again."
+          error instanceof Error
+            ? error.message
+            : "Login failed. Please try again."
         )
       }
     },
@@ -134,8 +139,9 @@ export default function LoginPage() {
     if (initializedRef.current || authLoading || isAuthenticated) return
 
     const initializeGoogle = () => {
-      if (window.google && googleButtonRef.current) {
+      if (window.google && googleButtonRef.current && selectedCollegeId) {
         initializedRef.current = true
+
         window.google.accounts.id.initialize({
           client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "",
           callback: handleCredentialResponse,
@@ -145,7 +151,7 @@ export default function LoginPage() {
           theme: "outline",
           size: "large",
           text: "signin_with",
-          width: 300,
+          width: 320,
         })
       }
     }
@@ -162,7 +168,7 @@ export default function LoginPage() {
 
       return () => clearInterval(checkGoogle)
     }
-  }, [authLoading, isAuthenticated, handleCredentialResponse])
+  }, [authLoading, isAuthenticated, handleCredentialResponse, selectedCollegeId])
 
   if (authLoading) {
     return (
@@ -183,27 +189,25 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background relative overflow-hidden p-4">
 
-      {/* Blurred Food Background */}
+      {/* Background Image */}
 
       <div
-        className="absolute inset-0 bg-cover bg-center opacity-20"
+        className="absolute inset-0 bg-cover bg-center opacity-60"
         style={{
           backgroundImage:
             "url('https://images.unsplash.com/photo-1504674900247-0877df9cc836')",
         }}
       />
 
-      {/* Gradient overlay */}
-
       <div className="absolute inset-0 bg-gradient-to-b from-background/40 to-background" />
 
       {/* Login Card */}
 
-      <Card className="relative w-full max-w-md backdrop-blur-xl bg-card/80 border-border shadow-2xl transition-all duration-300 hover:shadow-3xl">
+      <Card className="relative w-full max-w-md backdrop-blur-xl bg-card/20 border-border shadow-2xl">
 
         <CardHeader className="text-center space-y-4">
 
-          <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center transition-transform hover:scale-110">
+          <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
             <Utensils className="w-8 h-8 text-primary" />
           </div>
 
@@ -213,37 +217,22 @@ export default function LoginPage() {
             <CardDescription className="mt-2">
               Sign in with your college Google account to order food from campus canteens
             </CardDescription>
-
-            {/* Instructions */}
-
-            <div className="mt-4 bg-muted/40 border border-border rounded-md p-4 text-sm text-muted-foreground text-left">
-
-              <p className="font-medium text-foreground mb-2">
-                Before signing in:
-              </p>
-
-              <ul className="space-y-1">
-                <li>
-                  <span className="font-semibold text-primary">1.</span>{" "}
-                  First select your college from the dropdown.
-                </li>
-
-                <li>
-                  <span className="font-semibold text-primary">2.</span>{" "}
-                  Then sign in using your <span className="font-medium">official college email ID</span>.
-                </li>
-              </ul>
-
-            </div>
-
           </div>
 
         </CardHeader>
 
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-6 w-full">
 
-          <div className="space-y-2">
-            <Label htmlFor="college">Select Your College</Label>
+          {/* Step 1 */}
+
+          <div className="text-center">
+            <p className="text-sm text-muted-foreground">Step 1</p>
+            <p className="text-lg font-semibold">Select Your College</p>
+          </div>
+
+          <div className="space-y-3">
+
+            <Label htmlFor="college">College</Label>
 
             {isLoadingColleges ? (
               <div className="flex items-center justify-center py-2">
@@ -254,20 +243,34 @@ export default function LoginPage() {
                 value={selectedCollegeId?.toString() || ""}
                 onValueChange={(value) => setSelectedCollegeId(Number(value))}
               >
-                <SelectTrigger id="college">
+                <SelectTrigger
+                  id="college"
+                  className="h-12 text-base border-2 border-primary/40 focus:border-primary"
+                >
                   <SelectValue placeholder="Choose your college" />
                 </SelectTrigger>
 
                 <SelectContent>
                   {colleges.map((college) => (
-                    <SelectItem key={college.id} value={college.id.toString()}>
+                    <SelectItem
+                      key={college.id}
+                      value={college.id.toString()}
+                    >
                       {college.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
+
               </Select>
             )}
 
+          </div>
+
+          {/* Step 2 */}
+
+          <div className="text-center">
+            <p className="text-sm text-muted-foreground">Step 2</p>
+            <p className="text-lg font-semibold">Sign in with Google</p>
           </div>
 
           {loginError && (
@@ -277,14 +280,23 @@ export default function LoginPage() {
           )}
 
           <div className="flex flex-col items-center space-y-4">
-            <div ref={googleButtonRef} className="flex justify-center" />
+
+            {!selectedCollegeId ? (
+              <p className="text-sm text-muted-foreground text-center">
+                Please select your college to continue
+              </p>
+            ) : (
+              <div ref={googleButtonRef} className="flex justify-center" />
+            )}
 
             <p className="text-xs text-muted-foreground text-center max-w-xs">
               By signing in, you agree to our Terms of Service and Privacy Policy
             </p>
+
           </div>
 
         </CardContent>
+
       </Card>
     </div>
   )

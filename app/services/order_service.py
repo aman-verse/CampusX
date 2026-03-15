@@ -8,7 +8,15 @@ from app.services.whatsapp import build_whatsapp_url
 from fastapi import HTTPException
 from datetime import datetime, timedelta
 
-def create_order(db, user_id: int, canteen_id: int, phone: str, address: str, items: list):
+def create_order(
+    db,
+    user_id: int,
+    canteen_id: int,
+    phone: str,
+    address: str,
+    items: list,
+    student_note: str | None = None
+):
     total = 0
     print("DEBUG: user_id =", user_id)
     print("DEBUG: canteen_id =", canteen_id)
@@ -50,7 +58,8 @@ def create_order(db, user_id: int, canteen_id: int, phone: str, address: str, it
         phone=phone,
         address=address,
         token=token,
-        status="placed"
+        status="placed",
+        student_note=student_note
     )
     
     db.add(order)
@@ -154,3 +163,4 @@ def deliver_order(db: Session, order_id: int):
     db.commit()
     db.refresh(order)
     return order
+

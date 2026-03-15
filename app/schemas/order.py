@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 from datetime import datetime
 
 
@@ -12,6 +12,7 @@ class OrderCreate(BaseModel):
     phone: str
     address: str
     items: list[OrderItemCreate]
+    student_note: Optional[str] = None
 
 class OrderResponse(BaseModel):
     order_id: int
@@ -53,7 +54,8 @@ class OrderOut(BaseModel):
 
     phone: str
     address: str
-
+    reject_reason: Optional[str] = None
+    student_note: Optional[str] = None
     user: UserMini
     canteen: CanteenOut
     items: List[OrderItemOut]

@@ -38,3 +38,24 @@ def get_vendor_canteen(
     ).first()
 
     return canteen
+
+@router.patch("/vendor/status")
+def update_status(
+status:str,
+db:Session=Depends(get_db),
+user=Depends(require_roles(["vendor"]))
+):
+
+    canteen = db.query(models.Canteen).filter(
+        models.Canteen.vendor_email == user["sub"]
+    ).first()
+
+    if not canteen:
+        return {"error":"canteen not found"}
+
+    canteen.status = status
+
+    db.commit()
+
+    return canteen
+

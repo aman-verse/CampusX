@@ -1,10 +1,9 @@
 "use client"
 
 import { useEffect, useState, JSX } from "react"
-import Link from "next/link"
+import { useRouter } from "next/navigation"
 
 import { ProtectedRoute } from "@/components/protected-route"
-import { Header } from "@/components/header"
 
 import { api } from "@/lib/api"
 import type { Order } from "@/lib/types"
@@ -14,65 +13,100 @@ import {
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle,
+  CardTitle
 } from "@/components/ui/card"
 
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Skeleton } from "@/components/ui/skeleton"
+import { Button } from "@/components/ui/button"
 
-import { Package, Clock, CheckCircle, XCircle } from "lucide-react"
+import {
+  Package,
+  Clock,
+  CheckCircle,
+  XCircle,
+  Utensils,
+  ShoppingCart,
+  LayoutDashboard,
+  User,
+  LogOut
+} from "lucide-react"
+
+import { useAuth } from "@/lib/auth-context"
+import { useCart } from "@/lib/cart-context"
+
+import {
+  Avatar,
+  AvatarFallback
+} from "@/components/ui/avatar"
+
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator
+} from "@/components/ui/dropdown-menu"
+
+//////////////////////////////////////////////////
 
 const statusMap: Record<
   string,
   { label: string; variant: "default" | "secondary" | "destructive" | "outline"; icon: JSX.Element }
 > = {
+
   placed: {
-    label: "Placed",
+    label: "Waiting",
     variant: "secondary",
-    icon: <Clock className="h-4 w-4" />,
+    icon: <Clock className="h-4 w-4" />
   },
+
   accepted: {
-    label: "Accepted",
+    label: "Preparing",
     variant: "default",
-    icon: <CheckCircle className="h-4 w-4" />,
+    icon: <CheckCircle className="h-4 w-4" />
   },
+
   rejected: {
     label: "Rejected",
     variant: "destructive",
-    icon: <XCircle className="h-4 w-4" />,
+    icon: <XCircle className="h-4 w-4" />
   },
+
   delivered: {
     label: "Delivered",
     variant: "outline",
-    icon: <Package className="h-4 w-4" />,
-  },
+    icon: <Package className="h-4 w-4" />
+  }
+
 }
+
+//////////////////////////////////////////////////
 
 function OrdersContent() {
 
+  const router = useRouter()
+
+  const { user, logout } = useAuth()
+  const { clearCart, getItemCount } = useCart()
+
   const [orders, setOrders] = useState<Order[]>([])
-  const [loading, setLoading] = useState(true)
-  const [tab, setTab] = useState<"active" | "past">("active")
+  const [tab, setTab] = useState<
+    "placed" | "accepted" | "rejected" | "delivered"
+  >("placed")
+
+  const [range, setRange] = useState("week")
+
+  //////////////////////////////////////////////////
+  // INSTANT CACHE LOAD
 
   useEffect(() => {
 
-    const fetchOrders = async () => {
+    const cached = localStorage.getItem("orders_cache")
 
-      try {
+    if (cached) {
 
-        const data = await api.getMyOrders()
-        setOrders(data)
-
-      } catch (e) {
-
-        console.error("Failed to fetch orders", e)
-
-      } finally {
-
-        setLoading(false)
-
-      }
+      setOrders(JSON.parse(cached))
 
     }
 
@@ -81,19 +115,58 @@ function OrdersContent() {
   }, [])
 
   //////////////////////////////////////////////////
-  // FILTER
+
+  const fetchOrders = async () => {
+
+    try {
+
+      const data = await api.getMyOrders()
+
+      localStorage.setItem(
+        "orders_cache",
+        JSON.stringify(data)
+      )
+
+      let filtered = data
+
+      if (range === "week") {
+
+        const weekAgo = new Date()
+        weekAgo.setDate(weekAgo.getDate() - 7)
+
+        filtered = data.filter(
+          o => new Date(o.created_at) > weekAgo
+        )
+
+      }
+
+      setOrders(filtered)
+
+    } catch (e) {
+
+      console.error(e)
+
+    }
+
+  }
+
   //////////////////////////////////////////////////
 
-  const activeOrders = orders.filter(
-    o => o.status !== "delivered" && o.status !== "rejected"
-  )
+  useEffect(() => {
 
-  const pastOrders = orders.filter(
-    o => o.status === "delivered" || o.status === "rejected"
-  )
+    const interval = setInterval(fetchOrders, 3000)
+
+    return () => clearInterval(interval)
+
+  }, [range])
 
   //////////////////////////////////////////////////
-  // FORMAT TIME
+
+  const placedOrders = orders.filter(o => o.status === "placed")
+  const acceptedOrders = orders.filter(o => o.status === "accepted")
+  const rejectedOrders = orders.filter(o => o.status === "rejected")
+  const deliveredOrders = orders.filter(o => o.status === "delivered")
+
   //////////////////////////////////////////////////
 
   const formatDate = (d: string) => {
@@ -104,15 +177,12 @@ function OrdersContent() {
       timeZone: "Asia/Kolkata",
       day: "2-digit",
       month: "short",
-      year: "numeric",
       hour: "2-digit",
-      minute: "2-digit",
+      minute: "2-digit"
     })
 
   }
 
-  //////////////////////////////////////////////////
-  // ORDER CARD
   //////////////////////////////////////////////////
 
   const OrderCard = ({ order }: { order: Order }) => {
@@ -121,164 +191,290 @@ function OrdersContent() {
 
     return (
 
-      <Link href={`/orders/${order.id}`}>
+      <Card className="hover:shadow-xl transition cursor-pointer
+bg-white/0 backdrop-blur-md border border-white/30">
 
-        <Card className="hover:shadow-2xl transition cursor-pointer
-        bg-white/0 backdrop-blur-md border border-white/30">
+        <CardHeader className="pb-2">
 
-          <CardHeader className="pb-2">
+          <div className="flex justify-between items-start">
 
-            <div className="flex justify-between items-start">
+            <div className="space-y-1">
 
-              <div className="space-y-1">
+              <CardTitle className="text-lg font-bold">
+                Order #{order.token}
+              </CardTitle>
 
-                <CardTitle className="text-lg font-bold">
-                  Order #{order.token}
-                </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                {order.canteen?.name}
+              </p>
 
-                <p className="text-sm font-medium text-muted-foreground">
-                  {order.canteen?.name}
-                </p>
-
-                <CardDescription className="text-xs">
-                  {formatDate(order.created_at)}
-                </CardDescription>
-
-              </div>
-
-              <Badge
-                variant={status.variant}
-                className="flex gap-1 items-center"
-              >
-                {status.icon}
-                {status.label}
-              </Badge>
+              <CardDescription className="text-xs">
+                {formatDate(order.created_at)}
+              </CardDescription>
 
             </div>
 
-          </CardHeader>
+            <Badge variant={status.variant}
+              className="flex gap-1 items-center">
 
-          <CardContent className="pt-1 space-y-1">
+              {status.icon}
+              {status.label}
 
-            {order.items.map((item: any, i: number) => (
+            </Badge>
 
-              <p
-                key={i}
-                className="text-sm text-muted-foreground"
-              >
-                {item.quantity} × {item.menu_item?.name}
-              </p>
+          </div>
 
-            ))}
+        </CardHeader>
 
-            <div className="pt-2">
+        <CardContent className="pt-1 space-y-1">
 
-              <p className="text-sm font-semibold">
-                Total ₹{order.total_amount}
-              </p>
+          {order.items.map((item: any, i: number) => (
 
-            </div>
+            <p key={i} className="text-sm text-muted-foreground">
 
-          </CardContent>
+              {item.quantity} × {item.menu_item?.name}
+              {" = ₹"}
+              {item.menu_item?.price * item.quantity}
 
-        </Card>
+            </p>
 
-      </Link>
+          ))}
+
+          {order.status === "rejected" && (order as any).reject_reason && (
+
+            <p className="text-xs text-red-500">
+              Reason: {(order as any).reject_reason}
+            </p>
+
+          )}
+
+          <p className="font-semibold pt-2">
+            Total ₹{order.total_amount}
+          </p>
+
+        </CardContent>
+
+      </Card>
 
     )
 
   }
 
   //////////////////////////////////////////////////
-  // UI
-  //////////////////////////////////////////////////
 
   return (
 
     <div className="min-h-screen bg-background relative">
 
-      {/* Background Image */}
-
       <div
-        className="absolute inset-0 bg-cover bg-center opacity-20 blur-sm"
+        className="absolute inset-0 bg-cover bg-center opacity-10"
         style={{
           backgroundImage:
-            "url('https://images.unsplash.com/photo-1504674900247-0877df9cc836')",
+            "url('https://images.unsplash.com/photo-1504674900247-0877df9cc836')"
         }}
       />
 
       <div className="relative z-10">
 
-        <Header />
+        {/* HEADER */}
+
+        <header className="sticky top-0 bg-background border-b border-border">
+
+          <div className="container mx-auto h-16 flex justify-between items-center px-4">
+
+            <div className="flex items-center gap-2">
+              <Utensils className="w-6 h-6 text-primary" />
+              <span className="font-semibold text-lg">
+                Campus Eats
+              </span>
+            </div>
+
+            <div className="flex items-center gap-3">
+
+              <Button
+                variant="outline"
+                size="sm"
+                className="cursor-pointer"
+                onClick={() => router.push("/orders")}
+              >
+                Orders
+              </Button>
+
+              <Button
+                variant="outline"
+                size="sm"
+                className="cursor-pointer"
+                onClick={() => router.push("/cart")}
+              >
+                <ShoppingCart />
+
+                {getItemCount() > 0 && (
+                  <Badge className="ml-1">
+                    {getItemCount()}
+                  </Badge>
+                )}
+
+              </Button>
+
+              <DropdownMenu>
+
+                <DropdownMenuTrigger asChild>
+
+                  <Avatar className="cursor-pointer">
+
+                    <AvatarFallback>
+                      {user?.name?.slice(0, 2).toUpperCase()}
+                    </AvatarFallback>
+
+                  </Avatar>
+
+                </DropdownMenuTrigger>
+
+                <DropdownMenuContent align="end" className="w-56">
+
+                  <div className="px-3 py-2">
+
+                    <p className="font-medium">
+                      {user?.name}
+                    </p>
+
+                    <p className="text-xs text-muted-foreground">
+                      {user?.email}
+                    </p>
+
+                    <Badge className="mt-1">
+                      {user?.role}
+                    </Badge>
+
+                  </div>
+
+                  <DropdownMenuSeparator />
+
+                  <DropdownMenuItem
+                    className="cursor-pointer"
+                    onClick={() => router.push("/student")}
+                  >
+                    <LayoutDashboard className="w-4 h-4 mr-2" />
+                    Dashboard
+                  </DropdownMenuItem>
+
+                  <DropdownMenuItem
+                    className="cursor-pointer"
+                    onClick={() => router.push("/orders")}
+                  >
+                    <User className="w-4 h-4 mr-2" />
+                    My Orders
+                  </DropdownMenuItem>
+
+                  <DropdownMenuSeparator />
+
+                  <DropdownMenuItem
+                    className="text-red-500 cursor-pointer"
+                    onClick={() => {
+                      logout()
+                      clearCart()
+                      router.push("/login")
+                    }}
+                  >
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Sign out
+                  </DropdownMenuItem>
+
+                </DropdownMenuContent>
+
+              </DropdownMenu>
+
+            </div>
+
+          </div>
+
+        </header>
+
+        {/* FILTER */}
+
+        <div className="text-center mt-6">
+
+          <select
+            value={range}
+            onChange={(e) => setRange(e.target.value)}
+            className="border rounded px-3 py-1
+bg-background border-border text-foreground
+cursor-pointer"
+          >
+
+            <option value="week">
+              Last 7 Days
+            </option>
+
+            <option value="all">
+              All Orders
+            </option>
+
+          </select>
+
+        </div>
+
+        {/* ORDERS */}
 
         <main className="container mx-auto py-10">
 
           <div className="max-w-xl mx-auto space-y-8">
 
-            <div className="text-center mb-8">
-
-              <h1 className="text-3xl font-bold">
-                My Orders
-              </h1>
-
-              <p className="text-muted-foreground text-sm">
-                Track your campus food orders
-              </p>
-
-            </div>
-
-            <Tabs value={tab} onValueChange={(v) => setTab(v as any)}>
+            <Tabs value={tab}
+              onValueChange={(v) => setTab(v as any)}
+              className="cursor-pointer"
+            >
 
               <TabsList className="max-w-xl mx-auto">
 
-                <TabsTrigger value="active">
-                  Active ({activeOrders.length})
+                <TabsTrigger value="placed">
+                  Waiting ({placedOrders.length})
                 </TabsTrigger>
 
-                <TabsTrigger value="past">
-                  Past ({pastOrders.length})
+                <TabsTrigger value="accepted">
+                  Preparing ({acceptedOrders.length})
+                </TabsTrigger>
+
+                <TabsTrigger value="rejected">
+                  Rejected ({rejectedOrders.length})
+                </TabsTrigger>
+
+                <TabsTrigger value="delivered">
+                  Delivered ({deliveredOrders.length})
                 </TabsTrigger>
 
               </TabsList>
 
-              <TabsContent value="active" className="mt-6">
-
-                {loading ? (
-                  <Skeleton className="h-32 w-full" />
-                ) : activeOrders.length === 0 ? (
-                  <p className="text-center text-muted-foreground">
-                    No active orders
-                  </p>
-                ) : (
-
-                  <div className="space-y-6">
-                    {activeOrders.map(o => (
-                      <OrderCard key={o.id} order={o} />
-                    ))}
-                  </div>
-
-                )}
-
+              <TabsContent value="placed">
+                <div className="space-y-6">
+                  {placedOrders.map(o => (
+                    <OrderCard key={o.id} order={o} />
+                  ))}
+                </div>
               </TabsContent>
 
-              <TabsContent value="past" className="mt-6">
+              <TabsContent value="accepted">
+                <div className="space-y-6">
+                  {acceptedOrders.map(o => (
+                    <OrderCard key={o.id} order={o} />
+                  ))}
+                </div>
+              </TabsContent>
 
-                {loading ? (
-                  <Skeleton className="h-32 w-full" />
-                ) : pastOrders.length === 0 ? (
-                  <p className="text-center text-muted-foreground">
-                    No past orders
-                  </p>
-                ) : (
+              <TabsContent value="rejected">
+                <div className="space-y-6">
+                  {rejectedOrders.map(o => (
+                    <OrderCard key={o.id} order={o} />
+                  ))}
+                </div>
+              </TabsContent>
 
-                  <div className="space-y-6">
-                    {pastOrders.map(o => (
-                      <OrderCard key={o.id} order={o} />
-                    ))}
-                  </div>
-
-                )}
-
+              <TabsContent value="delivered">
+                <div className="space-y-6">
+                  {deliveredOrders.map(o => (
+                    <OrderCard key={o.id} order={o} />
+                  ))}
+                </div>
               </TabsContent>
 
             </Tabs>
@@ -294,6 +490,8 @@ function OrdersContent() {
   )
 
 }
+
+//////////////////////////////////////////////////
 
 export default function OrdersPage() {
 

@@ -1,19 +1,18 @@
 "use client"
 
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
 import { useCart } from "@/lib/cart-context"
 import { api } from "@/lib/api"
-import type { Canteen, MenuItem } from "@/lib/types"
+import type { Canteen } from "@/lib/types"
 
 import { Button } from "@/components/ui/button"
 import {
   Card,
   CardContent,
   CardHeader,
-  CardTitle,
-  CardDescription
+  CardTitle
 } from "@/components/ui/card"
 
 import { Badge } from "@/components/ui/badge"
@@ -21,10 +20,8 @@ import { Badge } from "@/components/ui/badge"
 import {
   Utensils,
   ShoppingCart,
-  Plus,
   Loader2,
   Search,
-  Star,
   LayoutDashboard,
   User,
   LogOut
@@ -48,18 +45,20 @@ import { useToast } from "@/hooks/use-toast"
 export default function StudentPage() {
 
   const router = useRouter()
-  const { user, isAuthenticated, isLoading: authLoading, logout } = useAuth()
-  const { addItem, clearCart, getItemCount } = useCart()
+
+  const {
+    user,
+    isAuthenticated,
+    isLoading: authLoading,
+    logout
+  } = useAuth()
+
+  const { clearCart, getItemCount } = useCart()
   const { toast } = useToast()
 
   const [canteens, setCanteens] = useState<Canteen[]>([])
-  const [menuItems, setMenuItems] = useState<MenuItem[]>([])
-  const [selectedCanteenId, setSelectedCanteenId] = useState<number | null>(null)
-
-  const [isLoadingCanteens, setIsLoadingCanteens] = useState(false)
-  const [isLoadingMenu, setIsLoadingMenu] = useState(false)
-
-  const menuRef = useRef<HTMLDivElement | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [search, setSearch] = useState("")
 
   const collegeId =
     typeof window !== "undefined"
@@ -68,9 +67,11 @@ export default function StudentPage() {
 
 
   useEffect(() => {
+
     if (!authLoading && (!isAuthenticated || user?.role !== "student")) {
       router.push("/login")
     }
+
   }, [authLoading, isAuthenticated, user, router])
 
 
@@ -80,7 +81,7 @@ export default function StudentPage() {
 
     const fetchCanteens = async () => {
 
-      setIsLoadingCanteens(true)
+      setLoading(true)
 
       try {
 
@@ -92,11 +93,11 @@ export default function StudentPage() {
         toast({
           title: "Error",
           description: "Failed to load canteens",
-          variant: "destructive",
+          variant: "destructive"
         })
 
       } finally {
-        setIsLoadingCanteens(false)
+        setLoading(false)
       }
 
     }
@@ -106,53 +107,14 @@ export default function StudentPage() {
   }, [collegeId, toast])
 
 
-  useEffect(() => {
-
-    if (!selectedCanteenId) {
-      setMenuItems([])
-      return
-    }
-
-    const fetchMenu = async () => {
-
-      setIsLoadingMenu(true)
-
-      try {
-
-        const data = await api.getMenuByCanteen(selectedCanteenId)
-
-        setMenuItems(data)
-
-        localStorage.setItem(
-          "selected_canteen_id",
-          String(selectedCanteenId)
-        )
-
-      } catch {
-
-        toast({
-          title: "Error",
-          description: "Failed to load menu",
-          variant: "destructive",
-        })
-
-      } finally {
-        setIsLoadingMenu(false)
-      }
-
-    }
-
-    fetchMenu()
-
-  }, [selectedCanteenId, toast])
-
-
   if (authLoading) {
+
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="animate-spin w-8 h-8 text-muted-foreground" />
+        <Loader2 className="animate-spin w-8 h-8" />
       </div>
     )
+
   }
 
 
@@ -170,7 +132,9 @@ export default function StudentPage() {
 
       <div className="relative z-10">
 
-        <header className="sticky top-0 bg-background border-b border-border z-50">
+        {/* HEADER */}
+
+        <header className="sticky top-0 bg-background border-b border-border">
 
           <div className="container mx-auto h-16 flex justify-between items-center px-4">
 
@@ -195,9 +159,11 @@ export default function StudentPage() {
                 onClick={() => router.push("/cart")}
               >
                 <ShoppingCart />
+
                 {getItemCount() > 0 && (
                   <Badge className="ml-1">{getItemCount()}</Badge>
                 )}
+
               </Button>
 
               <DropdownMenu>
@@ -207,7 +173,7 @@ export default function StudentPage() {
                   <Avatar className="cursor-pointer">
 
                     <AvatarFallback>
-                      {user?.name?.[0] || "U"}
+                      {user?.name?.slice(0, 2).toUpperCase()}
                     </AvatarFallback>
 
                   </Avatar>
@@ -219,7 +185,7 @@ export default function StudentPage() {
                   <div className="px-3 py-2">
 
                     <p className="font-medium">
-                      {user?.name || "User"}
+                      {user?.name}
                     </p>
 
                     <p className="text-xs text-muted-foreground">
@@ -273,15 +239,13 @@ export default function StudentPage() {
         </header>
 
 
+        {/* HERO */}
+
         <section className="container mx-auto py-12 text-center">
 
           <h1 className="text-4xl font-bold">
             Campus <span className="text-primary">Food Stalls</span>
           </h1>
-
-          <p className="text-muted-foreground mt-2">
-            Browse food vendors across your campus and order your favorite meals.
-          </p>
 
           <div className="mt-6 flex justify-center">
 
@@ -290,6 +254,8 @@ export default function StudentPage() {
               <Search className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
 
               <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
                 className="w-full pl-10 pr-4 py-3 rounded-full border border-border bg-background"
                 placeholder="Search stalls..."
               />
@@ -301,128 +267,57 @@ export default function StudentPage() {
         </section>
 
 
-        <main className="container mx-auto pb-16 relative">
+        {/* CANTEENS */}
 
-          {isLoadingCanteens ? (
+        <main className="container mx-auto pb-16">
+
+          {loading ? (
+
             <Loader2 className="animate-spin" />
+
           ) : (
 
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 justify-center">
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
 
-              {canteens.map((c) => (
+              {canteens
+                .filter(c =>
+                  c.name.toLowerCase().includes(search.toLowerCase())
+                )
+                .map((c) => (
 
-                <Card
-                  key={c.id}
-                  className="cursor-pointer hover:shadow-xl transition"
-                  onClick={() => {
-                    setSelectedCanteenId(c.id)
+                  <Card
+                    key={c.id}
+                    className="cursor-pointer hover:shadow-xl"
+                    onClick={() => router.push(`/canteen/${c.id}`)}
+                  >
 
-                    setTimeout(() => {
-                      menuRef.current?.scrollIntoView({
-                        behavior: "smooth",
-                        block: "start",
-                      })
-                    }, 200)
-                  }}
-                >
+                    <CardHeader>
 
-                  {/* <img
-                    src="https://images.unsplash.com/photo-1550547660-d9450f859349"
-                    className="w-full h-40 object-cover rounded-t-lg"
-                  /> */}
+                      <CardTitle className="flex justify-between">
 
-                  <CardHeader>
+                        {c.name}
 
-                    <CardTitle className="flex justify-between items-center">
-                      {c.name}
+                        <Badge>Open</Badge>
+
+                      </CardTitle>
+
+                    </CardHeader>
+
+                    <CardContent className="flex justify-between">
 
                       <Badge variant="secondary">
-                        Open
+                        Campus Vendor
                       </Badge>
 
-                    </CardTitle>
+                      <Button size="sm">
+                        View Menu
+                      </Button>
 
-                    {/* <CardDescription className="flex items-center gap-1">
-                      <Star className="w-4 h-4 text-yellow-400" />
-                      4.5 Rating
-                    </CardDescription> */}
+                    </CardContent>
 
-                  </CardHeader>
+                  </Card>
 
-                  <CardContent className="flex justify-between">
-
-                    <Badge variant="secondary">
-                      Campus Vendor
-                    </Badge>
-
-                    <Button size="sm">
-                      View Menu
-                    </Button>
-
-                  </CardContent>
-
-                </Card>
-
-              ))}
-
-            </div>
-
-          )}
-
-          {selectedCanteenId && (
-
-            <div ref={menuRef} className="mt-10 mx-auto px-4">
-
-              <h2 className="text-2xl font-bold mb-4">
-                Menu
-              </h2>
-
-              {isLoadingMenu ? (
-                <Loader2 className="animate-spin" />
-              ) : (
-
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-
-                  {menuItems.map((item) => (
-
-                    <Card key={item.id}>
-
-                      {/* <img
-                        src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c"
-                        className="w-full h-32 object-cover rounded-t-lg"
-                      /> */}
-
-                      <CardContent className="p-4 flex justify-between">
-
-                        <div>
-                          <p className="font-semibold">{item.name}</p>
-                          <p className="text-primary font-bold">
-                            ₹{item.price}
-                          </p>
-                        </div>
-
-                        <Button
-                          size="sm"
-                          onClick={() =>
-                            addItem({
-                              ...item,
-                              canteen_id: selectedCanteenId,
-                            })
-                          }
-                        >
-                          <Plus className="w-4 h-4 mr-1" />
-                          Add
-                        </Button>
-
-                      </CardContent>
-
-                    </Card>
-
-                  ))}
-
-                </div>
-
-              )}
+                ))}
 
             </div>
 
@@ -431,11 +326,13 @@ export default function StudentPage() {
         </main>
 
 
+        {/* FLOATING CART BUTTON */}
+
         {getItemCount() > 0 && (
 
           <Button
             onClick={() => router.push("/cart")}
-            className="fixed bottom-6 right-6 z-50 shadow-xl rounded-full h-14 w-14 flex items-center justify-center"
+            className="fixed bottom-21 right-13 z-50 shadow-xl rounded-full h-14 w-14 flex items-center justify-center"
           >
 
             <ShoppingCart className="w-5 h-5" />
@@ -448,6 +345,8 @@ export default function StudentPage() {
 
         )}
 
+
+        {/* FOOTER */}
 
         <footer className="border-t border-border py-10 mt-10">
 
@@ -490,4 +389,5 @@ export default function StudentPage() {
     </div>
 
   )
+
 }

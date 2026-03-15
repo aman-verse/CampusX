@@ -176,10 +176,12 @@ class ApiClient {
     return this.request<Order[]>("/orders/my")
   }
 
-  async rejectOrder(id: number) {
+  async rejectOrder(id: number, reason?: string) {
     return this.request(`/orders/vendor/${id}/reject`, {
-      method: "PATCH"
+      method: "PATCH",
+      body: JSON.stringify(reason ? reason : null)
     })
+
   }
 
   async deleteMenuItem(id: number) {
@@ -286,6 +288,15 @@ class ApiClient {
     })
   }
 
+  async updateCanteenStatus(status: string) {
+
+    return this.request("/canteens/vendor/status", {
+      method: "PATCH",
+      body: JSON.stringify({ status })
+    })
+
+  }
+
   //////////////////////////////////////////////////
   // SUPERADMIN
   //////////////////////////////////////////////////
@@ -320,6 +331,21 @@ class ApiClient {
       method: "DELETE",
     })
   }
+
+  
+  /////user profile update/////
+  async updateProfile(data: {
+    phone?: string
+  }) {
+
+    return this.request("/users/profile", {
+      method: "PATCH",
+      body: JSON.stringify(data)
+    })
+
+  }
+
+
 
 }
 
